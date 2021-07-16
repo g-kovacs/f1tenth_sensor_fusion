@@ -1,0 +1,11 @@
+<library path="lib/liblaser2pc">
+
+  <class name="point_cloud/laserscan_to_pointcloud_nodelet"
+   type="point_cloud::LaserScanToPointCloudNodelet"
+   base_class_type="nodelet::Nodelet">
+    <description>
+      Nodelet to convert sensor_msgs/LaserScan to sensor_msgs/PointCloud2.
+    </description>
+  </class>
+
+</library>
