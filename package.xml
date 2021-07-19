@@ -51,6 +51,7 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <depend>laser_geometry</depend>
+  <depend>pcl_ros</depend>
   <depend>message_filters</depend>
   <depend>nodelet</depend>
   <depend>roscpp</depend>

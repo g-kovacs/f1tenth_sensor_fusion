@@ -18,7 +18,10 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  pcl_ros
 )
+
+find_package(OpenCV)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -112,7 +115,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES point_cloud
-  CATKIN_DEPENDS laser_geometry message_filters sensor_msgs tf2 tf2_ros tf2_sensor_msgs nodelet roscpp rospy std_msgs
+  CATKIN_DEPENDS laser_geometry message_filters sensor_msgs tf2 tf2_ros tf2_sensor_msgs nodelet roscpp rospy std_msgs pcl_ros
 #  DEPENDS system_lib
 )
 
@@ -125,7 +128,9 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
+
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -133,6 +138,7 @@ include_directories(
 # )
 
 add_library(laser2pc src/laserscan_to_pointcloud_nodelet.cpp)
+add_library(cluster_track src/cluster_tracker.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -144,8 +150,9 @@ add_library(laser2pc src/laserscan_to_pointcloud_nodelet.cpp)
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/point_cloud_node.cpp)
 
-add_executable(primitive_laser2pc src/laser2pc.cpp)
+#add_executable(primitive_laser2pc src/laser2pc.cpp)
 add_executable(laser2pc_node src/laserscan_to_pointcloud_node.cpp)
+add_executable(cluster_tracker_node src/cluster_tracker_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -162,9 +169,11 @@ add_executable(laser2pc_node src/laserscan_to_pointcloud_node.cpp)
 #   ${catkin_LIBRARIES}
 # )
 
-target_link_libraries(primitive_laser2pc ${catkin_LIBRARIES})
+#target_link_libraries(primitive_laser2pc ${catkin_LIBRARIES})
 target_link_libraries(laser2pc ${catkin_LIBRARIES})
 target_link_libraries(laser2pc_node laser2pc ${catkin_LIBRARIES})
+target_link_libraries(cluster_track ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+target_link_libraries(cluster_tracker_node cluster_track ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 #############
 ## Install ##
@@ -201,7 +210,8 @@ catkin_install_python( PROGRAMS
 
 install(TARGETS
   laser2pc
-  primitive_laser2pc
+  #primitive_laser2pc
+  cluster_track
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

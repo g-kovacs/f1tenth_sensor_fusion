@@ -9,3 +9,12 @@
   </class>
 
 </library>
+<library path="lib/libcluster_track">
+  <class name="point_cloud/cluster_tracker_nodelet"
+    type="point_cloud::ClusterTracker"
+    base_class_type="nodelet::Nodelet">
+      <description>
+        Nodelet to deetect and track clusters found in the LiDAR scan.
+      </description>
+  </class>
+</library>

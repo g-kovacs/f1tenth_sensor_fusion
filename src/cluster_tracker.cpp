@@ -2,18 +2,25 @@
 #include <pluginlib/class_list_macros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <boost/thread.hpp>
+#include <random>
+#include <opencv2/video/tracking.hpp>
 
 namespace point_cloud
 {
     ClusterTracker::ClusterTracker() {}
+    ClusterTracker::~ClusterTracker() {}
 
     void ClusterTracker::onInit()
     {
         boost::mutex::scoped_lock lock(mutex_);
+        srand(time(NULL));
         private_nh_ = getPrivateNodeHandle();
 
         int concurrency_level = private_nh_.param("tracker_concurrency_level", concurrency_level);
         private_nh_.param<std::string>("scan_frame", scan_frame_, "laser");
+        tolerance_ = private_nh_.param<double>("tolerance", 0.2);
+        cluster_max_ = private_nh_.param<int>("max_cluster_size", 70);
+        cluster_min_ = private_nh_.param<int>("min_cluster_size", 30);
 
         // Check if explicitly single threaded, otherwise, let nodelet manager dictate thread pool size
         if (concurrency_level == 1)
@@ -35,33 +42,16 @@ namespace point_cloud
             input_queue_size_ = boost::thread::hardware_concurrency();
         }
 
-        this->_init_extractor();
-
         /// TODO: Subscriber needs to be initialized somewhere
-    }
 
-    void ClusterTracker::_init_extractor()
-    {
-        // Query parameters
-        double tolerance = private_nh_.param<double>("tolerance", 0.2);
-        int cluster_max = private_nh_.param<int>("max_cluster_size", 300);
-        int cluster_min = private_nh_.param<int>("min_cluster_size", 30);
-
-        // Initializing cluster extractor
-        search_tree_ = pcl::search::KdTree<pcl::PointXYZ>::Ptr(new pcl::search::KdTree<pcl::PointXYZ>);
-        cluster_extr_.setClusterTolerance(tolerance);
-        cluster_extr_.setMaxClusterSize(cluster_max);
-        cluster_extr_.setMinClusterSize(cluster_min);
-        cluster_extr_.setSearchMethod(search_tree_);
-        /* segmenter_.setOptimizeCoefficients(true);
-        segmenter_.setModelType(pcl::SACMODEL_PLANE);
-        segmenter_.setMethodType(pcl::SAC_RANSAC);
-        segmenter_.setMaxIterations(100);
-        segmenter_.setDistanceThreshold(tolerance); */
+        sub_.subscribe(nh_, "cloud", 100);
+        sub_.registerCallback(boost::bind(&ClusterTracker::cloudCallback, this, _1));
+        NODELET_INFO("Nodelet initialized...");
     }
 
     void ClusterTracker::_init_KFilters(size_t cnt)
     {
+        NODELET_INFO("Initializing Kalman Filters...");
         int stateDim = 4; // [x, y, v_x, v_y]
         int measDim = 2;
         float dx = 1.0f, dy = dx, dvx = 0.01f, dvy = dvx;
@@ -92,17 +82,57 @@ namespace point_cloud
         pub.publish(*clustermsg);
     }
 
+    void ClusterTracker::KFTrack(const std_msgs::Float32MultiArray ccs) {}
+
+    void ClusterTracker::_sync_cluster_publishers_size(size_t num_clusters)
+    {
+        // Remove unnecessary publishers from time to time
+        if ((float)rand() / RAND_MAX > 0.9f)
+        {
+            NODELET_INFO("Cleaning unused publishers");
+            while (cluster_pubs_.size() > num_clusters)
+            {
+                cluster_pubs_.back()->shutdown();
+                cluster_pubs_.pop_back();
+            }
+        }
+
+        while (num_clusters > cluster_pubs_.size())
+        {
+            try
+            {
+                NODELET_INFO("asd");
+                std::stringstream ss;
+                ss << "cluster_" << cluster_pubs_.size();
+                ros::Publisher *pub = new ros::Publisher(nh_.advertise<sensor_msgs::PointCloud2>(ss.str(), 10));
+                cluster_pubs_.push_back(pub);
+            }
+            catch (ros::Exception &ex)
+            {
+                NODELET_ERROR(ex.what());
+            }
+        }
+    }
+
     void ClusterTracker::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
     {
+        NODELET_INFO("new message received...........");
         pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::fromROSMsg(*cloud_msg, *input_cloud);
-        search_tree_->setInputCloud(input_cloud);
         std::vector<pcl::PointIndices> cluster_indices;
 
-        boost::mutex::scoped_lock lock(mutex_);
-        cluster_extr_.setInputCloud(input_cloud);
-        cluster_extr_.extract(cluster_indices);
-        lock.release();
+        pcl::search::KdTree<pcl::PointXYZ>::Ptr search_tree(new pcl::search::KdTree<pcl::PointXYZ>);
+        search_tree->setInputCloud(input_cloud);
+
+        pcl::EuclideanClusterExtraction<pcl::PointXYZ> cluster_extr;
+
+        cluster_extr.setClusterTolerance(tolerance_);
+        cluster_extr.setMaxClusterSize(cluster_max_);
+        cluster_extr.setMinClusterSize(cluster_min_);
+
+        cluster_extr.setSearchMethod(search_tree);
+        cluster_extr.setInputCloud(input_cloud);
+        cluster_extr.extract(cluster_indices);
 
         std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> cluster_vec;
         std::vector<pcl::PointXYZ> cluster_centres;
@@ -130,10 +160,15 @@ namespace point_cloud
             cluster_centres.push_back(centre);
         }
 
+        NODELET_INFO("feldolgozva");
+
         if (first_frame_)
         {
+            NODELET_INFO("First frame received...");
             boost::unique_lock<boost::recursive_mutex> lock(filter_mutex_);
             _init_KFilters(cluster_vec.size());
+            NODELET_INFO("Kalman Filters initialized...");
+            NODELET_INFO("%d Kalman Filters altogether", k_filters_.size());
             for (size_t i = 0; i < cluster_vec.size(); i++)
             {
                 geometry_msgs::Point pt;
@@ -147,12 +182,17 @@ namespace point_cloud
 
                 prev_cluster_centres_.push_back(pt);
             }
-            _sync_cluster_publishers();
+            NODELET_INFO("Creating publishers for %d clusters...", cluster_vec.size());
+            _sync_cluster_publishers_size(cluster_vec.size());
+            NODELET_INFO("Publishers synced...");
+            NODELET_INFO("%d publishers", cluster_pubs_.size());
             first_frame_ = false;
             lock.unlock();
+            NODELET_INFO("unlocked");
         }
         else
         {
+            NODELET_INFO("jóvanaz");
             std_msgs::Float32MultiArray cc;
             for (size_t i = 0; i < cluster_centres.size(); i++)
             {
@@ -163,11 +203,18 @@ namespace point_cloud
             }
 
             KFTrack(cc);
-            _sync_cluster_publishers();
+            _sync_cluster_publishers_size(cluster_vec.size());
+
+            std::stringstream ss;
+            ss << "Number of publishers: " << cluster_pubs_.size() << std::endl;
+            NODELET_INFO(ss.str().c_str());
 
             boost::mutex::scoped_lock lock(obj_mutex_);
-            for (auto it = objID.begin(); it != objID.end(); it++)
-                publish_cloud(cluster_pubs_[*it], cluster_vec[*it]);
+            for (size_t i = 0; i < cluster_vec.size(); ++i)
+                publish_cloud(*(cluster_pubs_[i]), cluster_vec[i]);
         }
+        NODELET_INFO("sajtosmakaróni");
     }
 }
+
+PLUGINLIB_EXPORT_CLASS(point_cloud::ClusterTracker, nodelet::Nodelet)
