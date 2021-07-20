@@ -35,8 +35,8 @@ namespace point_cloud
         void _init_KFilters(size_t);
 
         double euclidian_dst(geometry_msgs::Point &, geometry_msgs::Point &);
-        void publish_cloud(ros::Publisher &, pcl::PointCloud<pcl::PointXYZ>::Ptr);
-        void KFTrack(const std_msgs::Float32MultiArray);
+        void publish_cloud(ros::Publisher &, pcl::PointCloud<pcl::PointXYZ>::Ptr &);
+        void KFTrack(const std_msgs::Float32MultiArray &, std::vector<pcl::PointXYZ> &);
 
         void sync_cluster_publishers_size(size_t);
 

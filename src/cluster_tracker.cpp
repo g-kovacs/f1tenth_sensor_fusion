@@ -42,7 +42,7 @@ namespace point_cloud
             input_queue_size_ = boost::thread::hardware_concurrency();
         }
 
-        sub_.subscribe(nh_, "cloud", 100);
+        sub_.subscribe(nh_, "cloud", 1000);
         sub_.registerCallback(boost::bind(&ClusterTracker::cloudCallback, this, _1));
         NODELET_INFO("Nodelet initialized...");
     }
@@ -71,7 +71,7 @@ namespace point_cloud
         return sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) + (p1.z - p2.z) * (p1.z - p2.z));
     }
 
-    void ClusterTracker::publish_cloud(ros::Publisher &pub, pcl::PointCloud<pcl::PointXYZ>::Ptr cluster)
+    void ClusterTracker::publish_cloud(ros::Publisher &pub, pcl::PointCloud<pcl::PointXYZ>::Ptr &cluster)
     {
         sensor_msgs::PointCloud2::Ptr clustermsg(new sensor_msgs::PointCloud2);
         pcl::toROSMsg(*cluster, *clustermsg);
@@ -80,7 +80,22 @@ namespace point_cloud
         pub.publish(*clustermsg);
     }
 
-    void ClusterTracker::KFTrack(const std_msgs::Float32MultiArray ccs) {}
+    void ClusterTracker::KFTrack(const std_msgs::Float32MultiArray &ccs, std::vector<pcl::PointXYZ> &centres)
+    {
+        std::vector<cv::Mat> pred;
+        std::vector<geometry_msgs::Point> predicted_points;
+        for (auto it = k_filters_.begin(); it != k_filters_.end(); it++)
+        {
+            auto p = (*it)->predict();
+            geometry_msgs::Point pt;
+            pt.x = p.at<float>(0);
+            pt.y = p.at<float>(1);
+            pt.z = p.at<float>(2);
+
+            pred.push_back(p);
+            predicted_points.push_back(pt);
+        }
+    }
 
     void ClusterTracker::sync_cluster_publishers_size(size_t num_clusters)
     {
@@ -114,7 +129,7 @@ namespace point_cloud
 
     void ClusterTracker::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
     {
-        NODELET_INFO("new message received...........");
+        // NODELET_INFO("new message received...........");
         pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::fromROSMsg(*cloud_msg, *input_cloud);
         std::vector<pcl::PointIndices> cluster_indices;
@@ -135,6 +150,7 @@ namespace point_cloud
         std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> cluster_vec;
         std::vector<pcl::PointXYZ> cluster_centres;
 
+        // Get clusters and their respective centres
         for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); it++)
         {
             pcl::PointCloud<pcl::PointXYZ>::Ptr _cluster(new pcl::PointCloud<pcl::PointXYZ>);
@@ -158,17 +174,12 @@ namespace point_cloud
             cluster_centres.push_back(centre);
         }
 
-        NODELET_INFO("feldolgozva");
-
         sync_cluster_publishers_size(cluster_vec.size());
 
         if (first_frame_)
         {
-            NODELET_INFO("First frame received...");
             boost::unique_lock<boost::recursive_mutex> lock(filter_mutex_);
             _init_KFilters(cluster_vec.size());
-            NODELET_INFO("Kalman Filters initialized...");
-            NODELET_INFO("%d Kalman Filters altogether", k_filters_.size());
             for (size_t i = 0; i < cluster_vec.size(); i++)
             {
                 geometry_msgs::Point pt;
@@ -182,16 +193,11 @@ namespace point_cloud
 
                 prev_cluster_centres_.push_back(pt);
             }
-            NODELET_INFO("Creating publishers for %d clusters...", cluster_vec.size());
-            NODELET_INFO("Publishers synced...");
-            NODELET_INFO("%d publishers", cluster_pubs_.size());
             first_frame_ = false;
             lock.unlock();
-            //NODELET_INFO("unlocked");
         }
         else
         {
-            //NODELET_INFO("jóvanaz");
             std_msgs::Float32MultiArray cc;
             for (size_t i = 0; i < cluster_centres.size(); i++)
             {
@@ -201,17 +207,11 @@ namespace point_cloud
                 cc.data.push_back(c.z);
             }
 
-            KFTrack(cc);
-
-            std::stringstream ss;
-            ss << "Number of publishers: " << cluster_pubs_.size() << std::endl;
-            NODELET_INFO(ss.str().c_str());
-
-            boost::mutex::scoped_lock lock(obj_mutex_);
-            for (size_t i = 0; i < cluster_vec.size(); ++i)
-                publish_cloud(*(cluster_pubs_[i]), cluster_vec[i]);
+            KFTrack(cc, cluster_centres);
         }
-        //NODELET_INFO("sajtosmakaróni");
+        boost::mutex::scoped_lock lock(obj_mutex_);
+        for (size_t i = 0; i < cluster_vec.size(); ++i)
+            publish_cloud(*(cluster_pubs_[i]), cluster_vec[i]);
     }
 }
 

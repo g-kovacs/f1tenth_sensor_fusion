@@ -88,6 +88,7 @@ namespace point_cloud
     // ROS Parameters
     unsigned int input_queue_size_;
     std::string target_frame_;
+    std::string subscription_topic_;
     double transform_tolerance_;
   };
 

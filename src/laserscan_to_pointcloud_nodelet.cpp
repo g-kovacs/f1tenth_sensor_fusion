@@ -57,6 +57,7 @@ namespace point_cloud
     private_nh_ = getPrivateNodeHandle();
 
     private_nh_.param<std::string>("target_frame", target_frame_, "");
+    private_nh_.param<std::string>("subscription_topic", subscription_topic_, "scan");
     private_nh_.param<double>("transform_tolerance", transform_tolerance_, 0.01);
 
     int concurrency_level = private_nh_.param("converter_concurrency_level", concurrency_level);
@@ -109,7 +110,7 @@ namespace point_cloud
     if (pub_.getNumSubscribers() > 0 && sub_.getSubscriber().getNumPublishers() == 0)
     {
       NODELET_INFO("Got a subscriber to cloud, starting laserscan subscriber");
-      sub_.subscribe(nh_, "scan", input_queue_size_);
+      sub_.subscribe(nh_, subscription_topic_, input_queue_size_);
     }
   }
 
