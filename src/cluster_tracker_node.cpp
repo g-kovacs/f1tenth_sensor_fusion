@@ -11,8 +11,8 @@ int main(int argc, char *argv[])
     nodelet::Loader nodelet;
     nodelet::M_string remap(ros::names::getRemappings());
     nodelet::V_string nargv;
-    std::string nodelet_name = ros::this_node::getName();
-    nodelet.load(nodelet_name, "point_cloud/cluster_tracker_nodelet", remap, nargv);
+    nodelet.load("laserscan_to_pointcloud_nodelet", "point_cloud/laserscan_to_pointcloud_nodelet", remap, nargv);
+    nodelet.load("cluster_tracker_nodelet", "point_cloud/cluster_tracker_nodelet", remap, nargv);
 
     boost::shared_ptr<ros::MultiThreadedSpinner> spinner;
     if (concurrency_level)

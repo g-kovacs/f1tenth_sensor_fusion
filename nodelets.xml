@@ -14,7 +14,7 @@
     type="point_cloud::ClusterTracker"
     base_class_type="nodelet::Nodelet">
       <description>
-        Nodelet to deetect and track clusters found in the LiDAR scan.
+        Nodelet to detect and track clusters found in the LiDAR scan.
       </description>
   </class>
 </library>

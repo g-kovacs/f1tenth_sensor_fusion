@@ -1,5 +1,5 @@
 #include <point_cloud/cluster_tracker.h>
-#include <point_cloud/cluster_to_publisher_synchronizer.hpp>
+#include <point_cloud/cluster2pubSync.hpp>
 #include <pluginlib/class_list_macros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <boost/thread.hpp>
@@ -102,7 +102,7 @@ namespace point_cloud
                 NODELET_INFO("asd");
                 std::stringstream ss;
                 ss << "cluster_" << cluster_pubs_.size();
-                ros::Publisher *pub = new ros::Publisher(nh_.advertise<sensor_msgs::PointCloud2>(ss.str(), 10));
+                ros::Publisher *pub = new ros::Publisher(nh_.advertise<sensor_msgs::PointCloud2>(ss.str(), 100));
                 cluster_pubs_.push_back(pub);
             }
             catch (ros::Exception &ex)
