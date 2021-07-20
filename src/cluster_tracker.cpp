@@ -16,6 +16,7 @@ namespace point_cloud
         srand(time(NULL));
         private_nh_ = getPrivateNodeHandle();
 
+        // Load parameters
         int concurrency_level = private_nh_.param("tracker_concurrency_level", concurrency_level);
         private_nh_.param<std::string>("scan_frame", scan_frame_, "laser");
         tolerance_ = private_nh_.param<double>("tolerance", 0.2);
@@ -42,6 +43,7 @@ namespace point_cloud
             input_queue_size_ = boost::thread::hardware_concurrency();
         }
 
+        // Subscribe to topic with input data
         sub_.subscribe(nh_, "cloud", 1000);
         sub_.registerCallback(boost::bind(&ClusterTracker::cloudCallback, this, _1));
         NODELET_INFO("Nodelet initialized...");
@@ -71,6 +73,22 @@ namespace point_cloud
         return sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) + (p1.z - p2.z) * (p1.z - p2.z));
     }
 
+    std::pair<int, int> ClusterTracker::findMinIDX(std::vector<std::vector<double>> &distMat)
+    {
+        std::pair<int, int> minIndex;
+        float minEl = std::numeric_limits<float>::max();
+        for (int pp = 0; pp < distMat.size(); pp++)        // for each predicted point pp
+            for (int c = 0; c < distMat.at(0).size(); c++) // for each centre c
+            {
+                if (distMat[pp][c] < minEl)
+                {
+                    minEl = distMat[pp][c];
+                    minIndex = std::make_pair(pp, c);
+                }
+            }
+        return minIndex;
+    }
+
     void ClusterTracker::publish_cloud(ros::Publisher &pub, pcl::PointCloud<pcl::PointXYZ>::Ptr &cluster)
     {
         sensor_msgs::PointCloud2::Ptr clustermsg(new sensor_msgs::PointCloud2);
@@ -80,8 +98,9 @@ namespace point_cloud
         pub.publish(*clustermsg);
     }
 
-    void ClusterTracker::KFTrack(const std_msgs::Float32MultiArray &ccs, std::vector<pcl::PointXYZ> &centres)
+    void ClusterTracker::KFTrack(const std_msgs::Float32MultiArray &ccs)
     {
+        // Generate predictions and convert them to point data
         std::vector<cv::Mat> pred;
         std::vector<geometry_msgs::Point> predicted_points;
         for (auto it = k_filters_.begin(); it != k_filters_.end(); it++)
@@ -94,6 +113,33 @@ namespace point_cloud
 
             pred.push_back(p);
             predicted_points.push_back(pt);
+        }
+
+        // Convert multiarrray back to point data (regarding detected cluster centres)
+        std::vector<geometry_msgs::Point> cCentres;
+        for (auto it = ccs.data.begin(); it != ccs.data.end(); it += 3)
+        {
+            geometry_msgs::Point pt;
+            pt.x = *it;
+            pt.y = *(it + 1);
+            pt.z = *(it + 2);
+            cCentres.push_back(pt);
+        }
+
+        // Resetting object ID vector
+        objID.clear();
+        objID.resize(cCentres.size());
+        std::vector<std::vector<double>> distMatrix;
+
+        // Generating distance matrix to make cross-compliance between centres and KF-s easier
+        // rows: predicted points (indirectly the KFilter)
+        // columns: the detected centres
+        for (auto pp : predicted_points)
+        {
+            std::vector<double> distVec;
+            for (auto centre : cCentres)
+                distVec.push_back(euclidian_dst(pp, centre));
+            distMatrix.push_back(distVec);
         }
     }
 
@@ -114,7 +160,6 @@ namespace point_cloud
         {
             try
             {
-                NODELET_INFO("asd");
                 std::stringstream ss;
                 ss << "cluster_" << cluster_pubs_.size();
                 ros::Publisher *pub = new ros::Publisher(nh_.advertise<sensor_msgs::PointCloud2>(ss.str(), 100));
@@ -129,7 +174,6 @@ namespace point_cloud
 
     void ClusterTracker::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
     {
-        // NODELET_INFO("new message received...........");
         pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::fromROSMsg(*cloud_msg, *input_cloud);
         std::vector<pcl::PointIndices> cluster_indices;
@@ -207,7 +251,7 @@ namespace point_cloud
                 cc.data.push_back(c.z);
             }
 
-            KFTrack(cc, cluster_centres);
+            KFTrack(cc);
         }
         boost::mutex::scoped_lock lock(obj_mutex_);
         for (size_t i = 0; i < cluster_vec.size(); ++i)

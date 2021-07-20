@@ -23,6 +23,7 @@
 
 namespace point_cloud
 {
+    /// The ClusterTracker class to clusterize a point cloud (converted from a lidar scan) and track said clusters.
     class ClusterTracker : public nodelet::Nodelet
     {
     public:
@@ -30,16 +31,45 @@ namespace point_cloud
         class Cluster2PubSync;
 
     private:
+        /// Initialize nodelet with necessary parameters.
         virtual void onInit();
-        void _init_extractor();
-        void _init_KFilters(size_t);
 
+        /**
+         * Initialize a given number of Kalman-filters. Parameters only, the initial states must be set after calling this function.
+         * 
+         * @param n the number of filters to initialize
+         */
+        void _init_KFilters(size_t n);
+
+        /// Calculate the Euclidian distance of two 3D points.
         double euclidian_dst(geometry_msgs::Point &, geometry_msgs::Point &);
-        void publish_cloud(ros::Publisher &, pcl::PointCloud<pcl::PointXYZ>::Ptr &);
-        void KFTrack(const std_msgs::Float32MultiArray &, std::vector<pcl::PointXYZ> &);
 
-        void sync_cluster_publishers_size(size_t);
+        /// Return the indices of the smallest element of a 2D matrix.
+        std::pair<int, int> findMinIDX(std::vector<std::vector<double>> &);
 
+        /**
+         * Publish a PointCloud to a ROS topic.
+         * 
+         * @param pub the ROS publisher to said topic
+         * @param cluster the cluster of points to be published
+         */
+        void publish_cloud(ros::Publisher &pub, pcl::PointCloud<pcl::PointXYZ>::Ptr &cluster);
+
+        /**
+         * Track detected clusters using Kalman-filters.
+         * 
+         * @param ccs data of detected cluster centres as a multi array
+         */
+        void KFTrack(const std_msgs::Float32MultiArray &ccs);
+
+        void sync_cluster_publishers_size(size_t num_clusters);
+
+        /**
+         * Process incoming point cloud data: perform clusterization and calculation of cluster centroids, publish output data using ROS 
+         * publishers after performing the object detection.
+         * 
+         * @param cloud_msg the incoming point cloud message
+         */
         void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg);
 
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_;
