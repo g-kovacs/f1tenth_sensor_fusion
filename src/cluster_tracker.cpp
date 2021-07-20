@@ -19,9 +19,10 @@ namespace point_cloud
         // Load parameters
         int concurrency_level = private_nh_.param("tracker_concurrency_level", concurrency_level);
         private_nh_.param<std::string>("scan_frame", scan_frame_, "laser");
-        tolerance_ = private_nh_.param<double>("tolerance", 0.2);
+        private_nh_.param<std::string>("scan_topic", scan_topic_, "cloud");
+        tolerance_ = private_nh_.param<double>("tracker_tolerance", 0.2);
         cluster_max_ = private_nh_.param<int>("max_cluster_size", 70);
-        cluster_min_ = private_nh_.param<int>("min_cluster_size", 30);
+        cluster_min_ = private_nh_.param<int>("min_cluster_size", 20);
 
         // Check if explicitly single threaded, otherwise, let nodelet manager dictate thread pool size
         if (concurrency_level == 1)
@@ -36,7 +37,7 @@ namespace point_cloud
         // Only queue one pointcloud per running thread
         if (concurrency_level > 0)
         {
-            input_queue_size_ = static_cast<unsigned int>(concurrency_level);
+            input_queue_size_ = static_cast<size_t>(concurrency_level);
         }
         else
         {
@@ -44,7 +45,7 @@ namespace point_cloud
         }
 
         // Subscribe to topic with input data
-        sub_.subscribe(nh_, "cloud", 1000);
+        sub_.subscribe(nh_, scan_topic_, input_queue_size_);
         sub_.registerCallback(boost::bind(&ClusterTracker::cloudCallback, this, _1));
         NODELET_INFO("Nodelet initialized...");
     }

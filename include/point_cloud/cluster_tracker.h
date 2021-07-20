@@ -44,8 +44,13 @@ namespace point_cloud
         /// Calculate the Euclidian distance of two 3D points.
         double euclidian_dst(geometry_msgs::Point &, geometry_msgs::Point &);
 
-        /// Return the indices of the smallest element of a 2D matrix.
-        std::pair<int, int> findMinIDX(std::vector<std::vector<double>> &);
+        /**
+         * Return the indices of the smallest element of a 2D matrix. Each row represents a KF predition, each column a detected cluster centroid, their 
+         * intersections the distance between the two.
+         * 
+         * @param distMat the distance matrix
+         */
+        std::pair<int, int> findMinIDX(std::vector<std::vector<double>> &distMat);
 
         /**
          * Publish a PointCloud to a ROS topic.
@@ -88,12 +93,14 @@ namespace point_cloud
         ros::Publisher marker_pub_;
         message_filters::Subscriber<sensor_msgs::PointCloud2> sub_;
 
-        unsigned int input_queue_size_;
+        size_t input_queue_size_;
+        size_t kf_prune_ctr_;
         double tolerance_;
         int cluster_max_;
         int cluster_min_;
         bool first_frame_ = true;
         std::string scan_frame_;
+        std::string scan_topic_;
     };
 }
 
