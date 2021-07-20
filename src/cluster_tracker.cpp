@@ -17,8 +17,9 @@ namespace point_cloud
         private_nh_ = getPrivateNodeHandle();
 
         // Load parameters
-        int concurrency_level = private_nh_.param("tracker_concurrency_level", concurrency_level);
+        int concurrency_level = private_nh_.param("tracker_concurrency_level", 0);
         private_nh_.param<std::string>("scan_frame", scan_frame_, "laser");
+        private_nh_.param<std::string>("target_frame", output_frame_, scan_frame_);
         private_nh_.param<std::string>("scan_topic", scan_topic_, "cloud");
         tolerance_ = private_nh_.param<double>("tracker_tolerance", 0.2);
         cluster_max_ = private_nh_.param<int>("max_cluster_size", 70);
@@ -69,12 +70,12 @@ namespace point_cloud
         }
     }
 
-    double ClusterTracker::euclidian_dst(geometry_msgs::Point &p1, geometry_msgs::Point &p2)
+    float ClusterTracker::euclidian_dst(geometry_msgs::Point &p1, geometry_msgs::Point &p2)
     {
         return sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) + (p1.z - p2.z) * (p1.z - p2.z));
     }
 
-    std::pair<int, int> ClusterTracker::findMinIDX(std::vector<std::vector<double>> &distMat)
+    std::pair<int, int> ClusterTracker::findMinIDX(std::vector<std::vector<float>> &distMat)
     {
         std::pair<int, int> minIndex;
         float minEl = std::numeric_limits<float>::max();
@@ -127,21 +128,55 @@ namespace point_cloud
             cCentres.push_back(pt);
         }
 
-        // Resetting object ID vector
-        objID.clear();
-        objID.resize(cCentres.size());
-        std::vector<std::vector<double>> distMatrix;
-
         // Generating distance matrix to make cross-compliance between centres and KF-s easier
         // rows: predicted points (indirectly the KFilter)
         // columns: the detected centres
+        std::vector<std::vector<float>> distMatrix;
+
         for (auto pp : predicted_points)
         {
-            std::vector<double> distVec;
+            std::vector<float> distVec;
             for (auto centre : cCentres)
                 distVec.push_back(euclidian_dst(pp, centre));
             distMatrix.push_back(distVec);
         }
+
+        // Matching objectID to KF
+        for (size_t i = 0; i < k_filters_.size(); i++)
+        {
+            std::pair<int, int> mindIdx(findMinIDX(distMatrix));
+            objID[mindIdx.first] = mindIdx.second;
+            distMatrix[mindIdx.first] = std::vector<float>(6, 10000.0f);
+            for (size_t r = 0; r < distMatrix.size(); r++)
+                distMatrix[r][mindIdx.second] = 10000.0f;
+        }
+
+        /// TODO: implement
+        match_objID(distMatrix, objID);
+
+        if (objID.size() < cCentres.size())
+        {
+            size_t diff = cCentres.size() - objID.size();
+            _init_KFilters(diff);
+            /// TODO: Match cluster data to new KF-s
+        }
+        else if (cCentres.size() > objID.size() && kf_prune_ctr_++ > 30)
+        {
+            /// TODO: prune unused filters
+        }
+
+        visualization_msgs::MarkerArray markers;
+        fit_markers(predicted_points, objID, markers);
+
+        //prev_cluster_centres_ = cCentres;
+        marker_pub_.publish(markers);
+
+        /// TODO: reimplement line 290 and below from original file
+    }
+
+    void ClusterTracker::fit_markers(const std::vector<geometry_msgs::Point> &pts, const std::vector<int> &IDs, visualization_msgs::MarkerArray &markers)
+    {
+        /// NOTE: kitalálni, hogy #pts > #talált_obj esetén mi alapján kapják a markerek az id-t
     }
 
     void ClusterTracker::sync_cluster_publishers_size(size_t num_clusters)
@@ -236,7 +271,7 @@ namespace point_cloud
                 k_filters_[i]->statePre.at<float>(2) = 0;
                 k_filters_[i]->statePre.at<float>(3) = 0;
 
-                prev_cluster_centres_.push_back(pt);
+                //prev_cluster_centres_.push_back(pt);
             }
             first_frame_ = false;
             lock.unlock();

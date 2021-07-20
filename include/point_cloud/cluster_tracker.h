@@ -8,6 +8,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <geometry_msgs/Point.h>
+#include <visualization_msgs/MarkerArray.h>
 #include <message_filters/subscriber.h>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
@@ -42,7 +43,7 @@ namespace point_cloud
         void _init_KFilters(size_t n);
 
         /// Calculate the Euclidian distance of two 3D points.
-        double euclidian_dst(geometry_msgs::Point &, geometry_msgs::Point &);
+        float euclidian_dst(geometry_msgs::Point &, geometry_msgs::Point &);
 
         /**
          * Return the indices of the smallest element of a 2D matrix. Each row represents a KF predition, each column a detected cluster centroid, their 
@@ -50,7 +51,7 @@ namespace point_cloud
          * 
          * @param distMat the distance matrix
          */
-        std::pair<int, int> findMinIDX(std::vector<std::vector<double>> &distMat);
+        std::pair<int, int> findMinIDX(std::vector<std::vector<float>> &distMat);
 
         /**
          * Publish a PointCloud to a ROS topic.
@@ -66,6 +67,18 @@ namespace point_cloud
          * @param ccs data of detected cluster centres as a multi array
          */
         void KFTrack(const std_msgs::Float32MultiArray &ccs);
+
+        /// TODO: init objID vector with negative ones
+        void match_objID(std::vector<std::vector<float>> &distMat, std::vector<int> &objIDs);
+
+        /**
+         * Create ROS Markers to later publish for enabling the visualization of detected objects.
+         * 
+         * @param[in] pts predicted cluster centroid points (using KFilter)
+         * @param[in] IDs object IDs detected by filters
+         * @param[out] markers markers adjusted to fit points
+         */
+        void fit_markers(const std::vector<geometry_msgs::Point> &pts, const std::vector<int> &IDs, visualization_msgs::MarkerArray &markers);
 
         void sync_cluster_publishers_size(size_t num_clusters);
 
@@ -94,11 +107,12 @@ namespace point_cloud
         message_filters::Subscriber<sensor_msgs::PointCloud2> sub_;
 
         size_t input_queue_size_;
-        size_t kf_prune_ctr_;
+        size_t kf_prune_ctr_ = 0;
         double tolerance_;
         int cluster_max_;
         int cluster_min_;
         bool first_frame_ = true;
+        std::string output_frame_;
         std::string scan_frame_;
         std::string scan_topic_;
     };
