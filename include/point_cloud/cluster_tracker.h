@@ -1,5 +1,5 @@
 #ifndef POINT_CLOUD__CLUSTER_TRACKER_H
-#define POINT_CLOUD_CLUSTER_TRACKER_H
+#define POINT_CLOUD__CLUSTER_TRACKER_H
 
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
@@ -27,17 +27,18 @@ namespace point_cloud
     {
     public:
         ClusterTracker();
-        ~ClusterTracker();
+        class Cluster2PubSync;
 
     private:
         virtual void onInit();
         void _init_extractor();
         void _init_KFilters(size_t);
-        void _sync_cluster_publishers_size(size_t);
 
         double euclidian_dst(geometry_msgs::Point &, geometry_msgs::Point &);
         void publish_cloud(ros::Publisher &, pcl::PointCloud<pcl::PointXYZ>::Ptr);
         void KFTrack(const std_msgs::Float32MultiArray);
+
+        void sync_cluster_publishers_size(size_t);
 
         void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg);
 
@@ -66,4 +67,4 @@ namespace point_cloud
     };
 }
 
-#endif // POINT_CLOUD_CLUSTER_TRACKER_H
+#endif // POINT_CLOUD__CLUSTER_TRACKER_H

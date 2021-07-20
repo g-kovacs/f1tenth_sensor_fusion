@@ -1,4 +1,5 @@
 #include <point_cloud/cluster_tracker.h>
+#include <point_cloud/cluster_to_publisher_synchronizer.hpp>
 #include <pluginlib/class_list_macros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <boost/thread.hpp>
@@ -8,7 +9,6 @@
 namespace point_cloud
 {
     ClusterTracker::ClusterTracker() {}
-    ClusterTracker::~ClusterTracker() {}
 
     void ClusterTracker::onInit()
     {
@@ -41,8 +41,6 @@ namespace point_cloud
         {
             input_queue_size_ = boost::thread::hardware_concurrency();
         }
-
-        /// TODO: Subscriber needs to be initialized somewhere
 
         sub_.subscribe(nh_, "cloud", 100);
         sub_.registerCallback(boost::bind(&ClusterTracker::cloudCallback, this, _1));
@@ -84,7 +82,7 @@ namespace point_cloud
 
     void ClusterTracker::KFTrack(const std_msgs::Float32MultiArray ccs) {}
 
-    void ClusterTracker::_sync_cluster_publishers_size(size_t num_clusters)
+    void ClusterTracker::sync_cluster_publishers_size(size_t num_clusters)
     {
         // Remove unnecessary publishers from time to time
         if ((float)rand() / RAND_MAX > 0.9f)
@@ -162,6 +160,8 @@ namespace point_cloud
 
         NODELET_INFO("feldolgozva");
 
+        sync_cluster_publishers_size(cluster_vec.size());
+
         if (first_frame_)
         {
             NODELET_INFO("First frame received...");
@@ -183,16 +183,15 @@ namespace point_cloud
                 prev_cluster_centres_.push_back(pt);
             }
             NODELET_INFO("Creating publishers for %d clusters...", cluster_vec.size());
-            _sync_cluster_publishers_size(cluster_vec.size());
             NODELET_INFO("Publishers synced...");
             NODELET_INFO("%d publishers", cluster_pubs_.size());
             first_frame_ = false;
             lock.unlock();
-            NODELET_INFO("unlocked");
+            //NODELET_INFO("unlocked");
         }
         else
         {
-            NODELET_INFO("jóvanaz");
+            //NODELET_INFO("jóvanaz");
             std_msgs::Float32MultiArray cc;
             for (size_t i = 0; i < cluster_centres.size(); i++)
             {
@@ -203,7 +202,6 @@ namespace point_cloud
             }
 
             KFTrack(cc);
-            _sync_cluster_publishers_size(cluster_vec.size());
 
             std::stringstream ss;
             ss << "Number of publishers: " << cluster_pubs_.size() << std::endl;
@@ -213,7 +211,7 @@ namespace point_cloud
             for (size_t i = 0; i < cluster_vec.size(); ++i)
                 publish_cloud(*(cluster_pubs_[i]), cluster_vec[i]);
         }
-        NODELET_INFO("sajtosmakaróni");
+        //NODELET_INFO("sajtosmakaróni");
     }
 }
 

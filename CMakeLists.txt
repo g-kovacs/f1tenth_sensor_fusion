@@ -137,7 +137,7 @@ include_directories(
 #   src/${PROJECT_NAME}/point_cloud.cpp
 # )
 
-add_library(laser2pc src/laserscan_to_pointcloud_nodelet.cpp)
+add_library(laser2pc src/laserscan_to_pointcloud_nodelet.cpp include/point_cloud/cluster2pubSync.hpp)
 add_library(cluster_track src/cluster_tracker.cpp)
 
 ## Add cmake target dependencies of the library
