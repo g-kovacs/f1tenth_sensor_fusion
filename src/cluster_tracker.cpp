@@ -17,6 +17,7 @@ namespace point_cloud
         private_nh_ = getPrivateNodeHandle();
 
         // Load parameters
+
         int concurrency_level = private_nh_.param("tracker_concurrency_level", 0);
         private_nh_.param<std::string>("scan_frame", scan_frame_, "laser");
         private_nh_.param<std::string>("target_frame", output_frame_, scan_frame_);
@@ -53,7 +54,6 @@ namespace point_cloud
 
     void ClusterTracker::_init_KFilters(size_t cnt)
     {
-        NODELET_INFO("Initializing Kalman Filters...");
         int stateDim = 4; // [x, y, v_x, v_y]
         int measDim = 2;
         float dx = 1.0f, dy = dx, dvx = 0.01f, dvy = dvx;
@@ -77,7 +77,8 @@ namespace point_cloud
 
     std::pair<int, int> ClusterTracker::findMinIDX(std::vector<std::vector<float>> &distMat)
     {
-        std::pair<int, int> minIndex;
+        std::pair<int, int> minIndex(-1, -1); // needed for preventing a cluster to be registered to multiple filters in case
+                                              // there were more filters than detected clusters
         float minEl = std::numeric_limits<float>::max();
         for (int pp = 0; pp < distMat.size(); pp++)        // for each predicted point pp
             for (int c = 0; c < distMat.at(0).size(); c++) // for each centre c
@@ -103,6 +104,7 @@ namespace point_cloud
     void ClusterTracker::KFTrack(const std_msgs::Float32MultiArray &ccs)
     {
         // Generate predictions and convert them to point data
+
         std::vector<cv::Mat> pred;
         std::vector<geometry_msgs::Point> predicted_points;
         for (auto it = k_filters_.begin(); it != k_filters_.end(); it++)
@@ -118,6 +120,7 @@ namespace point_cloud
         }
 
         // Convert multiarrray back to point data (regarding detected cluster centres)
+
         std::vector<geometry_msgs::Point> cCentres;
         for (auto it = ccs.data.begin(); it != ccs.data.end(); it += 3)
         {
@@ -128,12 +131,64 @@ namespace point_cloud
             cCentres.push_back(pt);
         }
 
+        bool cluster_used[cCentres.size()];
+        for (auto b : cluster_used)
+            b = false;
+        objID = match_objID(predicted_points, cCentres, cluster_used);
+
+        // if there are new clusters, initialize new kalman filters with data of unmatched clusters
+        if (objID.size() < cCentres.size())
+        {
+            size_t diff = cCentres.size() - objID.size();
+            size_t skipped = 0;
+            _init_KFilters(diff);
+            for (size_t i = 0; i < cCentres.size(); i++)
+            {
+                if (!cluster_used[i])
+                {
+                    k_filters_[i + diff - skipped]->statePre.at<float>(0) = cCentres[i].x;
+                    k_filters_[i + diff - skipped]->statePre.at<float>(1) = cCentres[i].y;
+                    k_filters_[i + diff - skipped]->statePre.at<float>(2) = 0;
+                    k_filters_[i + diff - skipped]->statePre.at<float>(3) = 0;
+                }
+                else
+                    skipped++;
+            }
+        }
+        // if there are unused filters for some time, delete them
+        else if (cCentres.size() < objID.size() && kf_prune_ctr_++ > 30)
+        {
+            size_t deleted = 0;
+            for (size_t i = 0; i < objID.size(); i++)
+            {
+                if (objID[i] == -1) // no matching cluster for this filter
+                {
+                    delete k_filters_[i - deleted];
+                    k_filters_.erase(k_filters_.begin() + i - deleted++);
+                }
+            }
+        }
+
+        visualization_msgs::MarkerArray markers;
+        fit_markers(predicted_points, objID, markers);
+
+        //prev_cluster_centres_ = cCentres;
+        marker_pub_.publish(markers);
+
+        /// TODO: reimplement line 290 and below from original file
+    }
+
+    std::vector<int> ClusterTracker::match_objID(const std::vector<geometry_msgs::Point> &pred, const std::vector<geometry_msgs::Point> &cCentres, bool *used)
+    {
+        std::vector<int> vec(pred.size(), -1); // Initializing object ID vector with negative ones
+
         // Generating distance matrix to make cross-compliance between centres and KF-s easier
         // rows: predicted points (indirectly the KFilter)
         // columns: the detected centres
+
         std::vector<std::vector<float>> distMatrix;
 
-        for (auto pp : predicted_points)
+        for (auto pp : pred)
         {
             std::vector<float> distVec;
             for (auto centre : cCentres)
@@ -144,34 +199,18 @@ namespace point_cloud
         // Matching objectID to KF
         for (size_t i = 0; i < k_filters_.size(); i++)
         {
-            std::pair<int, int> mindIdx(findMinIDX(distMatrix));
-            objID[mindIdx.first] = mindIdx.second;
-            distMatrix[mindIdx.first] = std::vector<float>(6, 10000.0f);
-            for (size_t r = 0; r < distMatrix.size(); r++)
-                distMatrix[r][mindIdx.second] = 10000.0f;
+            std::pair<int, int> minIdx(findMinIDX(distMatrix)); // find closest match
+            if (minIdx.first != -1)                             // if a match was found, then
+            {
+                vec[minIdx.first] = minIdx.second; // save this match
+                used[minIdx.second] = true;        // record that this cluster was matched
+            }
+            distMatrix[minIdx.first] = std::vector<float>(6, std::numeric_limits<float>::max()); // erase the row (filter)
+            for (size_t r = 0; r < distMatrix.size(); r++)                                       // erase the column (point cloud)
+                distMatrix[r][minIdx.second] = std::numeric_limits<float>::max();
         }
 
-        /// TODO: implement
-        match_objID(distMatrix, objID);
-
-        if (objID.size() < cCentres.size())
-        {
-            size_t diff = cCentres.size() - objID.size();
-            _init_KFilters(diff);
-            /// TODO: Match cluster data to new KF-s
-        }
-        else if (cCentres.size() > objID.size() && kf_prune_ctr_++ > 30)
-        {
-            /// TODO: prune unused filters
-        }
-
-        visualization_msgs::MarkerArray markers;
-        fit_markers(predicted_points, objID, markers);
-
-        //prev_cluster_centres_ = cCentres;
-        marker_pub_.publish(markers);
-
-        /// TODO: reimplement line 290 and below from original file
+        return vec;
     }
 
     void ClusterTracker::fit_markers(const std::vector<geometry_msgs::Point> &pts, const std::vector<int> &IDs, visualization_msgs::MarkerArray &markers)

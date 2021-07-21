@@ -50,6 +50,7 @@ namespace point_cloud
          * intersections the distance between the two.
          * 
          * @param distMat the distance matrix
+         * @return the indicies of the minimum element. <-1, -1> if no minimum was found (i.e. all elements equal)
          */
         std::pair<int, int> findMinIDX(std::vector<std::vector<float>> &distMat);
 
@@ -68,8 +69,16 @@ namespace point_cloud
          */
         void KFTrack(const std_msgs::Float32MultiArray &ccs);
 
-        /// TODO: init objID vector with negative ones
-        void match_objID(std::vector<std::vector<float>> &distMat, std::vector<int> &objIDs);
+        /**
+         * Initialize a vector of negative ones for representing object IDs, then match incoming prediction data to measured cluster data. Keep track of 
+         * successfully matched clusters.
+         * 
+         * @param[in] pred The predictions of KFilters in use
+         * @param[in] cCentres The measured point cloud cluster data
+         * @param[out] used Flags of which clusters were successfully matched
+         * @return The list of cluster indices matched to each filter (-1 if no match for a certain filter)
+         */
+        std::vector<int> match_objID(const std::vector<geometry_msgs::Point> &pred, const std::vector<geometry_msgs::Point> &cCentres, bool *used);
 
         /**
          * Create ROS Markers to later publish for enabling the visualization of detected objects.
