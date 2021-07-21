@@ -24,6 +24,9 @@
 
 namespace point_cloud
 {
+
+#define filter_prune_interval 20
+
     /// The ClusterTracker class to clusterize a point cloud (converted from a lidar scan) and track said clusters.
     class ClusterTracker : public nodelet::Nodelet
     {
@@ -120,6 +123,7 @@ namespace point_cloud
         double tolerance_;
         int cluster_max_;
         int cluster_min_;
+        bool visualize_;
         bool first_frame_ = true;
         std::string output_frame_;
         std::string scan_frame_;

@@ -19,6 +19,7 @@ namespace point_cloud
         // Load parameters
 
         int concurrency_level = private_nh_.param("tracker_concurrency_level", 0);
+        private_nh_.param<bool>("visualize_rviz", visualize_, true);
         private_nh_.param<std::string>("scan_frame", scan_frame_, "laser");
         private_nh_.param<std::string>("target_frame", output_frame_, scan_frame_);
         private_nh_.param<std::string>("scan_topic", scan_topic_, "cloud");
@@ -49,6 +50,9 @@ namespace point_cloud
         // Subscribe to topic with input data
         sub_.subscribe(nh_, scan_topic_, input_queue_size_);
         sub_.registerCallback(boost::bind(&ClusterTracker::cloudCallback, this, _1));
+        // Init marker publisher if necessary
+        if (visualize_)
+            marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("viz", 100);
         NODELET_INFO("Nodelet initialized...");
     }
 
@@ -134,6 +138,8 @@ namespace point_cloud
         bool cluster_used[cCentres.size()];
         for (auto b : cluster_used)
             b = false;
+        boost::mutex::scoped_lock obj_lock(obj_mutex_);
+        // Match predictions to clusters
         objID = match_objID(predicted_points, cCentres, cluster_used);
 
         // if there are new clusters, initialize new kalman filters with data of unmatched clusters
@@ -141,6 +147,7 @@ namespace point_cloud
         {
             size_t diff = cCentres.size() - objID.size();
             size_t skipped = 0;
+            boost::unique_lock<boost::recursive_mutex> lock(filter_mutex_);
             _init_KFilters(diff);
             for (size_t i = 0; i < cCentres.size(); i++)
             {
@@ -156,26 +163,34 @@ namespace point_cloud
             }
         }
         // if there are unused filters for some time, delete them
-        else if (cCentres.size() < objID.size() && kf_prune_ctr_++ > 30)
+        else if (cCentres.size() < objID.size() && kf_prune_ctr_++ > filter_prune_interval)
         {
-            size_t deleted = 0;
-            for (size_t i = 0; i < objID.size(); i++)
+            boost::unique_lock<boost::recursive_mutex> lock(filter_mutex_);
+            size_t deleted = 0, i = 0;
+            for (auto it = objID.begin(); it != objID.end(); it++)
             {
-                if (objID[i] == -1) // no matching cluster for this filter
+                if (*it == -1) // no matching cluster for this filter
                 {
                     delete k_filters_[i - deleted];
+                    objID.erase(it--); // remove '-1' from objID --> thus sizes of filters and objects remain the same
                     k_filters_.erase(k_filters_.begin() + i - deleted++);
                 }
+                i++;
             }
+            kf_prune_ctr_ = 0;
         }
 
-        visualization_msgs::MarkerArray markers;
-        fit_markers(predicted_points, objID, markers);
+        if (visualize_)
+        {
+            visualization_msgs::MarkerArray markers;
+            fit_markers(cCentres, objID, markers);
 
-        //prev_cluster_centres_ = cCentres;
-        marker_pub_.publish(markers);
+            marker_pub_.publish(markers);
+        }
 
         /// TODO: reimplement line 290 and below from original file
+
+        obj_mutex_.unlock();
     }
 
     std::vector<int> ClusterTracker::match_objID(const std::vector<geometry_msgs::Point> &pred, const std::vector<geometry_msgs::Point> &cCentres, bool *used)
@@ -220,7 +235,10 @@ namespace point_cloud
 
     void ClusterTracker::sync_cluster_publishers_size(size_t num_clusters)
     {
+        boost::mutex::scoped_lock lock(mutex_);
+
         // Remove unnecessary publishers from time to time
+        /// TODO: ennél okosabbat, ami illeszkedik a dinamikus obj. érzékeléshez
         if ((float)rand() / RAND_MAX > 0.9f)
         {
             NODELET_INFO("Cleaning unused publishers");
@@ -309,11 +327,8 @@ namespace point_cloud
                 k_filters_[i]->statePre.at<float>(1) = pt.y;
                 k_filters_[i]->statePre.at<float>(2) = 0;
                 k_filters_[i]->statePre.at<float>(3) = 0;
-
-                //prev_cluster_centres_.push_back(pt);
             }
             first_frame_ = false;
-            lock.unlock();
         }
         else
         {
@@ -328,6 +343,9 @@ namespace point_cloud
 
             KFTrack(cc);
         }
+
+        /// TODO: illeszteni a dinamikus objektumkövetéshez
+
         boost::mutex::scoped_lock lock(obj_mutex_);
         for (size_t i = 0; i < cluster_vec.size(); ++i)
             publish_cloud(*(cluster_pubs_[i]), cluster_vec[i]);

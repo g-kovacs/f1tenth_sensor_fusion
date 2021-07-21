@@ -1,5 +1,6 @@
 # Tracker parameters
 tracker_concurrency_level: 4
+visualize_rviz: true
 #max_cluster_size: 50 # default: 70
 #min_cluster_size: 30 # default: 20
 #tracker_tolerance: 0.2 #2 cm
