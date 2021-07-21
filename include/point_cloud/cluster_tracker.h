@@ -66,7 +66,11 @@ namespace point_cloud
         void publish_cloud(ros::Publisher &pub, pcl::PointCloud<pcl::PointXYZ>::Ptr &cluster);
 
         /**
-         * Track detected clusters using Kalman-filters.
+         * Track detected clusters using Kalman-filters. 
+         * 
+         * First, predictions of already working Kalman-filters are registered and matched against measured point data to find correspondence. Then, 
+         * unmatched points are assigned to a new filter, or those filters are deleted that have not been used for the last few input messages. If 
+         * visualization is enabled, markers are assigned to each tracked cluster. Finally, the Kalman-filters are updated based on measured data.
          * 
          * @param ccs data of detected cluster centres as a multi array
          */
@@ -124,6 +128,7 @@ namespace point_cloud
         int cluster_max_;
         int cluster_min_;
         bool visualize_;
+        bool transform_;
         bool first_frame_ = true;
         std::string output_frame_;
         std::string scan_frame_;

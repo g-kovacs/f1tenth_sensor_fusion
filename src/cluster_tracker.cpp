@@ -2,9 +2,12 @@
 #include <point_cloud/cluster2pubSync.hpp>
 #include <pluginlib/class_list_macros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_msgs/Int32MultiArray.h>
 #include <boost/thread.hpp>
 #include <random>
 #include <opencv2/video/tracking.hpp>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 namespace point_cloud
 {
@@ -47,12 +50,15 @@ namespace point_cloud
             input_queue_size_ = boost::thread::hardware_concurrency();
         }
 
+        transform_ = scan_frame_.compare(output_frame_) == 0 ? true : false;
+
         // Subscribe to topic with input data
         sub_.subscribe(nh_, scan_topic_, input_queue_size_);
         sub_.registerCallback(boost::bind(&ClusterTracker::cloudCallback, this, _1));
         // Init marker publisher if necessary
         if (visualize_)
             marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("viz", 100);
+        objID_pub_ = nh_.advertise<std_msgs::Int32MultiArray>("obj_id", 100);
         NODELET_INFO("Nodelet initialized...");
     }
 
@@ -179,18 +185,32 @@ namespace point_cloud
             }
             kf_prune_ctr_ = 0;
         }
+        std::vector<int> objCopy(objID); // make copy so lock can be released (no modifications further down)
+        obj_mutex_.unlock();
 
         if (visualize_)
         {
             visualization_msgs::MarkerArray markers;
-            fit_markers(cCentres, objID, markers);
+            fit_markers(cCentres, objCopy, markers);
 
             marker_pub_.publish(markers);
         }
 
         /// TODO: reimplement line 290 and below from original file
 
-        obj_mutex_.unlock();
+        std_msgs::Int32MultiArray obj_msg;
+        for (auto it = objCopy.begin(); it != objCopy.end(); ++it)
+            obj_msg.data.push_back(*it);
+        objID_pub_.publish(obj_msg);
+
+        boost::unique_lock<boost::recursive_mutex> lock(filter_mutex_);
+        for (size_t i = 0; i < objCopy.size(); i++)
+        {
+            float meas[2] = {cCentres[objCopy[i]].x, cCentres[objCopy[i]].y};
+            cv::Mat measMat = cv::Mat(2, 1, CV_32F, meas);
+            if (!(meas[0] == 0.0f || meas[1] == 0.0f))
+                k_filters_[i]->correct(measMat);
+        }
     }
 
     std::vector<int> ClusterTracker::match_objID(const std::vector<geometry_msgs::Point> &pred, const std::vector<geometry_msgs::Point> &cCentres, bool *used)
@@ -231,6 +251,53 @@ namespace point_cloud
     void ClusterTracker::fit_markers(const std::vector<geometry_msgs::Point> &pts, const std::vector<int> &IDs, visualization_msgs::MarkerArray &markers)
     {
         /// NOTE: kitalálni, hogy #pts > #talált_obj esetén mi alapján kapják a markerek az id-t
+        for (auto i = 0; i < IDs.size(); i++)
+        {
+            visualization_msgs::Marker m;
+            m.id = i;
+            m.type = visualization_msgs::Marker::CUBE;
+            m.scale.x = 0.2;
+            m.scale.y = 0.2;
+            m.scale.z = 0.2;
+            m.action = visualization_msgs::Marker::ADD;
+            m.color.a = 1.0;
+            m.color.r = i % 2 ? 1 : 0;
+            m.color.g = i % 3 ? 1 : 0;
+            m.color.b = i % 4 ? 1 : 0;
+
+            geometry_msgs::Point clusterC(pts[i]);
+
+            if (transform_)
+            {
+                tf2_ros::Buffer buf_;
+                tf2_ros::TransformListener tfListener(buf_);
+
+                geometry_msgs::Point trans_cluster;
+
+                geometry_msgs::TransformStamped trans_msg;
+                tf2::Stamped<tf2::Transform> stamped_trans;
+                try
+                {
+                    trans_msg = buf_.lookupTransform(output_frame_, scan_frame_, ros::Time(0), ros::Duration(0.2));
+                    tf2::fromMsg(trans_msg, stamped_trans);
+                    trans_msg = tf2::toMsg(tf2::Stamped<tf2::Transform>(stamped_trans.inverse(), stamped_trans.stamp_, stamped_trans.frame_id_));
+                }
+                catch (tf2::TransformException &ex)
+                {
+                    ROS_WARN("%s", ex.what());
+                    continue;
+                }
+
+                tf2::doTransform(clusterC, trans_cluster, trans_msg);
+                clusterC = trans_cluster;
+            }
+
+            m.pose.position.x = clusterC.x;
+            m.pose.position.y = clusterC.y;
+            m.pose.position.z = clusterC.z;
+
+            markers.markers.push_back(m);
+        }
     }
 
     void ClusterTracker::sync_cluster_publishers_size(size_t num_clusters)
@@ -238,7 +305,6 @@ namespace point_cloud
         boost::mutex::scoped_lock lock(mutex_);
 
         // Remove unnecessary publishers from time to time
-        /// TODO: ennél okosabbat, ami illeszkedik a dinamikus obj. érzékeléshez
         if ((float)rand() / RAND_MAX > 0.9f)
         {
             NODELET_INFO("Cleaning unused publishers");
