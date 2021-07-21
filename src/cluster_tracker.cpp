@@ -1,5 +1,5 @@
 #include <point_cloud/cluster_tracker.h>
-#include <point_cloud/cluster2pubSync.hpp>
+//#include <point_cloud/cluster2pubSync.hpp>
 #include <pluginlib/class_list_macros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Int32MultiArray.h>
@@ -148,12 +148,12 @@ namespace point_cloud
         // Match predictions to clusters
         objID = match_objID(predicted_points, cCentres, cluster_used);
 
+        boost::unique_lock<boost::recursive_mutex> flock(filter_mutex_);
         // if there are new clusters, initialize new kalman filters with data of unmatched clusters
         if (objID.size() < cCentres.size())
         {
             size_t diff = cCentres.size() - objID.size();
             size_t skipped = 0;
-            boost::unique_lock<boost::recursive_mutex> lock(filter_mutex_);
             _init_KFilters(diff);
             for (size_t i = 0; i < cCentres.size(); i++)
             {
@@ -169,9 +169,8 @@ namespace point_cloud
             }
         }
         // if there are unused filters for some time, delete them
-        else if (cCentres.size() < objID.size() && kf_prune_ctr_++ > filter_prune_interval)
+        else if (cCentres.size() < objID.size() && kf_prune_ctr_++ > prune_interval)
         {
-            boost::unique_lock<boost::recursive_mutex> lock(filter_mutex_);
             size_t deleted = 0, i = 0;
             for (auto it = objID.begin(); it != objID.end(); it++)
             {
@@ -203,7 +202,6 @@ namespace point_cloud
             obj_msg.data.push_back(*it);
         objID_pub_.publish(obj_msg);
 
-        boost::unique_lock<boost::recursive_mutex> lock(filter_mutex_);
         for (size_t i = 0; i < objCopy.size(); i++)
         {
             float meas[2] = {cCentres[objCopy[i]].x, cCentres[objCopy[i]].y};
@@ -255,6 +253,7 @@ namespace point_cloud
         {
             visualization_msgs::Marker m;
             m.id = i;
+            m.header.frame_id = output_frame_;
             m.type = visualization_msgs::Marker::CUBE;
             m.scale.x = 0.2;
             m.scale.y = 0.2;
@@ -305,7 +304,7 @@ namespace point_cloud
         boost::mutex::scoped_lock lock(mutex_);
 
         // Remove unnecessary publishers from time to time
-        if ((float)rand() / RAND_MAX > 0.9f)
+        if (cluster_pubs_.size() > num_clusters && publisher_prune_ctr_++ > prune_interval)
         {
             NODELET_INFO("Cleaning unused publishers");
             while (cluster_pubs_.size() > num_clusters)
@@ -313,6 +312,7 @@ namespace point_cloud
                 cluster_pubs_.back()->shutdown();
                 cluster_pubs_.pop_back();
             }
+            publisher_prune_ctr_ = 0;
         }
 
         while (num_clusters > cluster_pubs_.size())
