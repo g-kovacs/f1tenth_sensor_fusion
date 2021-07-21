@@ -1,6 +1,6 @@
 <launch>
-    <node pkg="nodelet" type="nodelet" name="nodelet_manager" args="manager"/>
-    <node pkg="nodelet" type="nodelet" name="ClusterTracker" args="load point_cloud/cluster_tracker_nodelet">
+    <node pkg="nodelet" type="nodelet" name="manager_" args="manager" output="screen"/>
+    <node pkg="nodelet" type="nodelet" name="ClusterTracker" args="load point_cloud/cluster_tracker_nodelet manager_" output="screen">
         <rosparam command="load" file="$(find point_cloud)/params.yaml" />
     </node>
 </launch>

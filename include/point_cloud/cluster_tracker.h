@@ -21,11 +21,12 @@
 #include <opencv2/video/tracking.hpp>
 #include <iterator>
 #include <vector>
+#include <memory>
 
 namespace point_cloud
 {
 
-#define prune_interval 20
+#define prune_interval 50
 
     /// The ClusterTracker class to clusterize a point cloud (converted from a lidar scan) and track said clusters.
     class ClusterTracker : public nodelet::Nodelet
@@ -111,12 +112,11 @@ namespace point_cloud
 
         ros::NodeHandle nh_;
         ros::NodeHandle private_nh_;
-        boost::mutex mutex_;
         boost::recursive_mutex filter_mutex_;
-        boost::mutex obj_mutex_;
+        boost::mutex mutex_;
 
         std::vector<int> objID;
-        std::vector<cv::KalmanFilter *> k_filters_;
+        std::vector<std::unique_ptr<cv::KalmanFilter>> k_filters_;
         std::vector<ros::Publisher *> cluster_pubs_;
         ros::Publisher objID_pub_;
         ros::Publisher marker_pub_;
