@@ -28,12 +28,6 @@ namespace point_cloud
         private_nh_.param<bool>("visualize_rviz", visualize_, true);
         private_nh_.param<std::string>("scan_frame", scan_frame_, "laser");
         private_nh_.param<std::string>("target_frame", output_frame_, scan_frame_.c_str());
-
-        /* std::stringstream ss;
-        ss << "Scan frame is: " << scan_frame_ << std::endl
-           << "Target frame is: " << output_frame_ << std::endl;
-        NODELET_INFO(ss.str().c_str()); */
-
         private_nh_.param<std::string>("scan_topic", scan_topic_, "cloud");
         tolerance_ = private_nh_.param<double>("tracker_tolerance", 0.2);
         cluster_max_ = private_nh_.param<int>("max_cluster_size", 70);
@@ -60,7 +54,6 @@ namespace point_cloud
         }
 
         transform_ = scan_frame_.compare(output_frame_) == 0 ? false : true;
-        //NODELET_INFO("Transform is %s", transform_ ? "enabled" : "disabled");
 
         // Subscribe to topic with input data
         sub_.subscribe(nh_, scan_topic_, input_queue_size_);
@@ -97,7 +90,6 @@ namespace point_cloud
 
     std::pair<int, int> ClusterTracker::findMinIDX(std::vector<std::vector<float>> &distMat)
     {
-        NODELET_INFO("Finding min idx...");
         std::pair<int, int> minIndex(-1, -1); // needed for preventing a cluster to be registered to multiple filters in case
                                               // there were more filters than detected clusters
         float minEl = std::numeric_limits<float>::max();
@@ -110,7 +102,6 @@ namespace point_cloud
                     minIndex = std::make_pair(pp, c);
                 }
             }
-        NODELET_INFO("return: <%d, %d>", minIndex.first, minIndex.second);
         return minIndex;
     }
 
@@ -125,7 +116,6 @@ namespace point_cloud
 
     void ClusterTracker::KFTrack(const std_msgs::Float32MultiArray &ccs)
     {
-        NODELET_INFO("Starting tracking algorithm...");
         // Generate predictions and convert them to point data
 
         std::vector<cv::Mat> pred;
@@ -142,8 +132,6 @@ namespace point_cloud
             predicted_points.push_back(pt);
         }
 
-        NODELET_INFO("Predictions complete...");
-
         // Convert multiarrray back to point data (regarding detected cluster centres)
 
         std::vector<geometry_msgs::Point> cCentres;
@@ -156,25 +144,19 @@ namespace point_cloud
             cCentres.push_back(pt);
         }
 
-        NODELET_INFO("%ld cluster centres ready...", cCentres.size());
-
         bool cluster_used[cCentres.size()];
         for (auto b : cluster_used)
             b = false;
         boost::mutex::scoped_lock obj_lock(mutex_);
         // Match predictions to clusters
         objID = match_objID(predicted_points, cCentres, cluster_used);
-        NODELET_INFO("Objects & clusters matched...");
-        NODELET_INFO("objID length: %ld", objID.size());
 
         boost::unique_lock<boost::recursive_mutex> flock(filter_mutex_);
         // if there are new clusters, initialize new kalman filters with data of unmatched clusters
         if (objID.size() < cCentres.size())
         {
             size_t diff = cCentres.size() - objID.size();
-            NODELET_INFO("Creating %ld extra Kalman-filters...", diff);
             _init_KFilters(diff);
-            std::cout << k_filters_.size() << std::endl;
             objID.resize(k_filters_.size(), -1);
             int f = 0, c = 0;
             while (f != k_filters_.size() && c != cCentres.size())
@@ -195,12 +177,10 @@ namespace point_cloud
                     c++;
                 }
             }
-            NODELET_INFO("Extra filters created...");
         }
         // if there are unused filters for some time, delete them
         else if (cCentres.size() < objID.size() && kf_prune_ctr_++ > prune_interval) // watch for kf_prune_ctr++ (!)
         {
-            NODELET_INFO("Pruning unused KFilters...");
             size_t deleted = 0, i = 0;
             for (auto it = objID.begin(); it != objID.end(); it++)
             {
@@ -212,26 +192,21 @@ namespace point_cloud
                 i++;
             }
             kf_prune_ctr_ = 0;
-            NODELET_INFO("Pruning done...");
         }
 
         if (visualize_)
         {
-            NODELET_INFO("Fitting markers...");
             visualization_msgs::MarkerArray markers;
             fit_markers(cCentres, objID, markers);
 
             marker_pub_.publish(markers);
-            NODELET_INFO("Markers published...");
         }
 
         std_msgs::Int32MultiArray obj_msg;
         for (auto it = objID.begin(); it != objID.end(); ++it)
             obj_msg.data.push_back(*it);
         objID_pub_.publish(obj_msg);
-        NODELET_INFO("Objects published...");
 
-        NODELET_INFO("Correcting Kalman-filters...");
         if (k_filters_.size() > 0)
             for (size_t i = 0; i < objID.size(); i++)
             {
@@ -242,7 +217,6 @@ namespace point_cloud
                 if (!(meas[0] == 0.0f || meas[1] == 0.0f))
                     k_filters_[i]->correct(measMat);
             }
-        NODELET_INFO("Correction complete...");
     }
 
     std::vector<int> ClusterTracker::match_objID(const std::vector<geometry_msgs::Point> &pred, const std::vector<geometry_msgs::Point> &cCentres, bool *used)
@@ -263,18 +237,6 @@ namespace point_cloud
             distMatrix.push_back(distVec);
         }
 
-        std::cout << "distMat.size()" << distMatrix.size() << "\n";
-        std::cout << "distMat[0].size()" << (distMatrix.size() > 0 ? distMatrix.at(0).size() : 0) << "\n";
-        // DEBUG: print the distMat
-        for (const auto &row : distMatrix)
-        {
-            for (const auto &s : row)
-                std::cout << s << ' ';
-            std::cout << std::endl;
-        }
-
-        NODELET_INFO("Matching objectID to KF..");
-        NODELET_INFO("%ld predictions, %ld filters", pred.size(), k_filters_.size());
         // Matching objectID to KF
         for (size_t i = 0; i < k_filters_.size(); i++)
         {
@@ -318,7 +280,6 @@ namespace point_cloud
 
             if (transform_)
             {
-                NODELET_INFO("Transforming...");
                 tf2_ros::Buffer buf_;
                 tf2_ros::TransformListener tfListener(buf_);
 
@@ -357,14 +318,12 @@ namespace point_cloud
         // Remove unnecessary publishers from time to time
         if (cluster_pubs_.size() > num_clusters && publisher_prune_ctr_++ > prune_interval) // watch for ctr++ (!)
         {
-            NODELET_INFO("Cleaning unused publishers...");
             while (cluster_pubs_.size() > num_clusters)
             {
                 cluster_pubs_.back()->shutdown();
                 cluster_pubs_.pop_back();
             }
             publisher_prune_ctr_ = 0;
-            NODELET_INFO("Unused publishers cleaned...");
         }
 
         while (num_clusters > cluster_pubs_.size())
@@ -385,7 +344,6 @@ namespace point_cloud
 
     void ClusterTracker::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
     {
-        NODELET_INFO("New msg received...");
         pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::fromROSMsg(*cloud_msg, *input_cloud);
         std::vector<pcl::PointIndices> cluster_indices;
@@ -430,8 +388,6 @@ namespace point_cloud
             cluster_centres.push_back(centre);
         }
 
-        NODELET_INFO("%ld clusters found...", cluster_vec.size());
-
         sync_cluster_publishers_size(cluster_vec.size());
 
         boost::unique_lock<boost::recursive_mutex> flock(filter_mutex_);
@@ -463,8 +419,6 @@ namespace point_cloud
             }
             KFTrack(cc);
         }
-
-        /// TODO: objID-től függővé tenni a publikálást
 
         boost::mutex::scoped_lock lock(mutex_);
         for (size_t i = 0; i < objID.size(); ++i)
