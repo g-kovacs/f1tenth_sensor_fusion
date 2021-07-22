@@ -33,7 +33,7 @@ namespace point_cloud
     {
     public:
         ClusterTracker();
-        class Cluster2PubSync;
+        ~ClusterTracker();
 
     private:
         /// Initialize nodelet with necessary parameters.
