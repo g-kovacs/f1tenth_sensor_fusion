@@ -1,16 +1,16 @@
 # Tracker parameters
-tracker_concurrency_level: 1
+tracker_concurrency_level: 4
 visualize_rviz: true
-#max_cluster_size: 50 # default: 70
+max_cluster_size: 100 # default: 70
 #min_cluster_size: 30 # default: 20
 #tracker_tolerance: 0.2 #2 cm
-#target_frame: "output_frame"
+#target_frame: ""
 #scan_frame: "input_frame"
 #scan_topic: "your_topic"
 
 
 # Converter parameters
-converter_concurrency_level: 2
-#converter_target_frame: "your_frame"
+converter_concurrency_level: 4
+#converter_target_frame: "base_link"
 #converter_subscription_topic: "your_topic"
 #transform_tolerance: 0.01 # default: 0.01
