@@ -1,0 +1,9 @@
+<launch>
+    <node pkg="nodelet" type="nodelet" name="manager_" args="manager" output="screen"/>
+    <node pkg="nodelet" type="nodelet" name="ClusterTracker" args="load point_cloud/cluster_tracker_nodelet manager_" output="screen">
+        <rosparam command="load" file="$(find point_cloud)/params.yaml" />
+    </node>
+    <node pkg="nodelet" type="nodelet" name="ScanConverter" args="load point_cloud/laserscan_to_pointcloud_nodelet manager_" output="screen">
+        <rosparam command="load" file="$(find point_cloud)/params.yaml" />
+    </node>
+</launch>
