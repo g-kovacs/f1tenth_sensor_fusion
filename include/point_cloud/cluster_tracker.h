@@ -1,3 +1,20 @@
+/* Copyright 2021 Kovács Gergely Attila
+*
+*   Licensed under the Apache License,
+*   Version 2.0(the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License. 
+*   
+*/
+
 #ifndef POINT_CLOUD__CLUSTER_TRACKER_H
 #define POINT_CLOUD__CLUSTER_TRACKER_H
 
@@ -39,12 +56,17 @@ namespace point_cloud
         /// Initialize nodelet with necessary parameters.
         virtual void onInit();
 
+        int _load_params();
+
         /**
          * Initialize a given number of Kalman-filters. Parameters only, the initial states must be set after calling this function.
          * 
          * @param n the number of filters to initialize
          */
         void _init_KFilters(size_t n);
+
+        template <class C>
+        void _set_kfilter_state_pre(const C &pt, std::unique_ptr<cv::KalmanFilter> &filter);
 
         /// Calculate the Euclidian distance of two 3D points.
         float euclidian_dst(geometry_msgs::Point &, geometry_msgs::Point &);
@@ -56,7 +78,7 @@ namespace point_cloud
          * @param distMat the distance matrix
          * @return the indicies of the minimum element. <-1, -1> if no minimum was found (i.e. all elements equal)
          */
-        std::pair<int, int> findMinIDX(std::vector<std::vector<float>> &distMat);
+        std::pair<int, int> find_min_IDX(std::vector<std::vector<float>> &dist_mat);
 
         /**
          * Publish a PointCloud to a ROS topic.
@@ -65,6 +87,8 @@ namespace point_cloud
          * @param cluster the cluster of points to be published
          */
         void publish_cloud(ros::Publisher &pub, pcl::PointCloud<pcl::PointXYZ>::Ptr &cluster);
+
+        void publish_objects();
 
         /**
          * Track detected clusters using Kalman-filters. 
@@ -77,6 +101,8 @@ namespace point_cloud
          */
         void KFTrack(const std_msgs::Float32MultiArray &ccs);
 
+        std::vector<geometry_msgs::Point> generate_predictions();
+
         /**
          * Initialize a vector of negative ones for representing object IDs, then match incoming prediction data to measured cluster data. Keep track of 
          * successfully matched clusters.
@@ -86,7 +112,10 @@ namespace point_cloud
          * @param[out] used Flags of which clusters were successfully matched
          * @return The list of cluster indices matched to each filter (-1 if no match for a certain filter)
          */
-        std::vector<int> match_objID(const std::vector<geometry_msgs::Point> &pred, const std::vector<geometry_msgs::Point> &cCentres, bool *used);
+        std::vector<int> match_objID(const std::vector<geometry_msgs::Point> &pred, const std::vector<geometry_msgs::Point> &cCentres, bool *cluster_used);
+
+        void create_kfilters_for_new_clusters(const std::vector<geometry_msgs::Point> &centres, const bool *cluster_used);
+        void prune_unused_kfilters();
 
         /**
          * Create ROS Markers to later publish for enabling the visualization of detected objects.
@@ -96,6 +125,10 @@ namespace point_cloud
          * @param[out] markers markers adjusted to fit points
          */
         void fit_markers(const std::vector<geometry_msgs::Point> &pts, const std::vector<int> &IDs, visualization_msgs::MarkerArray &markers);
+
+        void transform_centre(geometry_msgs::Point &centre);
+
+        void correct_kfilter_matrices(const std::vector<geometry_msgs::Point> &cCentres);
 
         void sync_cluster_publishers_size(size_t num_clusters);
 
@@ -107,11 +140,11 @@ namespace point_cloud
          */
         void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg);
 
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_;
-        std::vector<geometry_msgs::Point> prev_cluster_centres_;
+        void extract_cluster_data(const pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud, const std::vector<pcl::PointIndices> &cluster_indices, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &cluster_vec, std::vector<pcl::PointXYZ> &cluster_centres);
 
         ros::NodeHandle nh_;
         ros::NodeHandle private_nh_;
+        pcl::EuclideanClusterExtraction<pcl::PointXYZ> cluster_extr_;
         boost::recursive_mutex filter_mutex_;
         boost::mutex mutex_;
 

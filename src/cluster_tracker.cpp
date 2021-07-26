@@ -1,3 +1,20 @@
+/* Copyright 2021 Kovács Gergely Attila
+*
+*   Licensed under the Apache License,
+*   Version 2.0(the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License. 
+*   
+*/
+
 #include <point_cloud/cluster_tracker.h>
 #include <pluginlib/class_list_macros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -24,14 +41,11 @@ namespace point_cloud
 
         // Load parameters
 
-        int concurrency_level = private_nh_.param("tracker_concurrency_level", 0);
-        private_nh_.param<bool>("visualize_rviz", visualize_, true);
-        private_nh_.param<std::string>("scan_frame", scan_frame_, "laser");
-        private_nh_.param<std::string>("target_frame", output_frame_, scan_frame_.c_str());
-        private_nh_.param<std::string>("scan_topic", scan_topic_, "cloud");
-        tolerance_ = private_nh_.param<double>("tracker_tolerance", 0.2);
-        cluster_max_ = private_nh_.param<int>("max_cluster_size", 70);
-        cluster_min_ = private_nh_.param<int>("min_cluster_size", 20);
+        int concurrency_level = _load_params();
+
+        cluster_extr_.setClusterTolerance(tolerance_);
+        cluster_extr_.setMaxClusterSize(cluster_max_);
+        cluster_extr_.setMinClusterSize(cluster_min_);
 
         // Check if explicitly single threaded, otherwise, let nodelet manager dictate thread pool size
         if (concurrency_level == 1)
@@ -62,7 +76,19 @@ namespace point_cloud
         if (visualize_)
             marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("viz", 100);
         objID_pub_ = nh_.advertise<std_msgs::Int32MultiArray>("obj_id", 100);
-        NODELET_INFO("Nodelet initialized...");
+        NODELET_INFO("Tracker nodelet initialized...");
+    }
+
+    int ClusterTracker::_load_params()
+    {
+        private_nh_.param<bool>("visualize_rviz", visualize_, true);
+        private_nh_.param<std::string>("scan_frame", scan_frame_, "laser");
+        private_nh_.param<std::string>("target_frame", output_frame_, scan_frame_.c_str());
+        private_nh_.param<std::string>("scan_topic", scan_topic_, "cloud");
+        tolerance_ = private_nh_.param<double>("tracker_tolerance", 0.2);
+        cluster_max_ = private_nh_.param<int>("max_cluster_size", 70);
+        cluster_min_ = private_nh_.param<int>("min_cluster_size", 20);
+        return private_nh_.param("concurrency_level", 0);
     }
 
     void ClusterTracker::_init_KFilters(size_t cnt)
@@ -83,12 +109,21 @@ namespace point_cloud
         }
     }
 
+    template <class C>
+    void ClusterTracker::_set_kfilter_state_pre(const C &pt, std::unique_ptr<cv::KalmanFilter> &filter)
+    {
+        filter->statePre.at<float>(0) = pt.x;
+        filter->statePre.at<float>(1) = pt.y;
+        filter->statePre.at<float>(2) = 0;
+        filter->statePre.at<float>(3) = 0;
+    }
+
     float ClusterTracker::euclidian_dst(geometry_msgs::Point &p1, geometry_msgs::Point &p2)
     {
         return sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y) + (p1.z - p2.z) * (p1.z - p2.z));
     }
 
-    std::pair<int, int> ClusterTracker::findMinIDX(std::vector<std::vector<float>> &distMat)
+    std::pair<int, int> ClusterTracker::find_min_IDX(std::vector<std::vector<float>> &distMat)
     {
         std::pair<int, int> minIndex(-1, -1); // needed for preventing a cluster to be registered to multiple filters in case
                                               // there were more filters than detected clusters
@@ -114,23 +149,17 @@ namespace point_cloud
         pub.publish(*clustermsg);
     }
 
+    void ClusterTracker::publish_objects()
+    {
+        std_msgs::Int32MultiArray obj_msg;
+        for (auto it = objID.begin(); it != objID.end(); ++it)
+            obj_msg.data.push_back(*it);
+        objID_pub_.publish(obj_msg);
+    }
+
     void ClusterTracker::KFTrack(const std_msgs::Float32MultiArray &ccs)
     {
-        // Generate predictions and convert them to point data
-
-        std::vector<cv::Mat> pred;
-        std::vector<geometry_msgs::Point> predicted_points;
-        for (auto it = k_filters_.begin(); it != k_filters_.end(); it++)
-        {
-            auto p = (*it)->predict();
-            geometry_msgs::Point pt;
-            pt.x = p.at<float>(0);
-            pt.y = p.at<float>(1);
-            pt.z = p.at<float>(2);
-
-            pred.push_back(p);
-            predicted_points.push_back(pt);
-        }
+        std::vector<geometry_msgs::Point> predicted_points = generate_predictions();
 
         // Convert multiarrray back to point data (regarding detected cluster centres)
 
@@ -147,6 +176,7 @@ namespace point_cloud
         bool cluster_used[cCentres.size()];
         for (auto b : cluster_used)
             b = false;
+
         boost::mutex::scoped_lock obj_lock(mutex_);
         // Match predictions to clusters
         objID = match_objID(predicted_points, cCentres, cluster_used);
@@ -155,43 +185,12 @@ namespace point_cloud
         // if there are new clusters, initialize new kalman filters with data of unmatched clusters
         if (objID.size() < cCentres.size())
         {
-            size_t diff = cCentres.size() - objID.size();
-            _init_KFilters(diff);
-            objID.resize(k_filters_.size(), -1);
-            int f = 0, c = 0;
-            while (f != k_filters_.size() && c != cCentres.size())
-            {
-                if (objID[f] != -1)
-                {
-                    f++;
-                }
-                else if (cluster_used[c])
-                    c++;
-                else
-                {
-                    k_filters_[f]->statePre.at<float>(0) = cCentres[c].x;
-                    k_filters_[f]->statePre.at<float>(1) = cCentres[c].y;
-                    k_filters_[f]->statePre.at<float>(2) = 0;
-                    k_filters_[f]->statePre.at<float>(3) = 0;
-                    f++;
-                    c++;
-                }
-            }
+            create_kfilters_for_new_clusters(cCentres, cluster_used);
         }
         // if there are unused filters for some time, delete them
-        else if (cCentres.size() < objID.size() && kf_prune_ctr_++ > prune_interval) // watch for kf_prune_ctr++ (!)
+        else if (cCentres.size() < objID.size() && kf_prune_ctr_++ > prune_interval)
         {
-            size_t deleted = 0, i = 0;
-            for (auto it = objID.begin(); it != objID.end(); it++)
-            {
-                if (*it == -1) // no matching cluster for this filter
-                {
-                    objID.erase(it--); // remove '-1' from objID --> thus sizes of filters and objects remain the same
-                    k_filters_.erase(k_filters_.begin() + i - deleted++);
-                }
-                i++;
-            }
-            kf_prune_ctr_ = 0;
+            prune_unused_kfilters();
         }
 
         if (visualize_)
@@ -202,24 +201,80 @@ namespace point_cloud
             marker_pub_.publish(markers);
         }
 
-        std_msgs::Int32MultiArray obj_msg;
-        for (auto it = objID.begin(); it != objID.end(); ++it)
-            obj_msg.data.push_back(*it);
-        objID_pub_.publish(obj_msg);
+        publish_objects();
 
         if (k_filters_.size() > 0)
-            for (size_t i = 0; i < objID.size(); i++)
-            {
-                if (objID[i] == -1)
-                    continue;
-                float meas[2] = {(float)cCentres[objID[i]].x, (float)cCentres[objID[i]].y};
-                cv::Mat measMat = cv::Mat(2, 1, CV_32F, meas);
-                if (!(meas[0] == 0.0f || meas[1] == 0.0f))
-                    k_filters_[i]->correct(measMat);
-            }
+            correct_kfilter_matrices(cCentres);
     }
 
-    std::vector<int> ClusterTracker::match_objID(const std::vector<geometry_msgs::Point> &pred, const std::vector<geometry_msgs::Point> &cCentres, bool *used)
+    void ClusterTracker::correct_kfilter_matrices(const std::vector<geometry_msgs::Point> &cCentres)
+    {
+        for (size_t i = 0; i < objID.size(); i++)
+        {
+            if (objID[i] == -1)
+                continue;
+            float meas[2] = {(float)cCentres[objID[i]].x, (float)cCentres[objID[i]].y};
+            cv::Mat measMat = cv::Mat(2, 1, CV_32F, meas);
+            if (!(meas[0] == 0.0f || meas[1] == 0.0f))
+                k_filters_[i]->correct(measMat);
+        }
+    }
+
+    std::vector<geometry_msgs::Point> ClusterTracker::generate_predictions()
+    {
+        std::vector<geometry_msgs::Point> pred;
+        for (auto it = k_filters_.begin(); it != k_filters_.end(); it++)
+        {
+            auto p = (*it)->predict();
+            geometry_msgs::Point pt;
+            pt.x = p.at<float>(0);
+            pt.y = p.at<float>(1);
+            pt.z = p.at<float>(2);
+
+            pred.push_back(pt);
+        }
+        return pred;
+    }
+
+    void ClusterTracker::create_kfilters_for_new_clusters(const std::vector<geometry_msgs::Point> &centres, const bool *cluster_used)
+    {
+        size_t diff = centres.size() - objID.size();
+        _init_KFilters(diff);
+        objID.resize(k_filters_.size(), -1);
+        int f = 0, c = 0;
+        while (f != k_filters_.size() && c != centres.size())
+        {
+            if (objID[f] != -1)
+            {
+                f++;
+            }
+            else if (cluster_used[c])
+                c++;
+            else
+            {
+                _set_kfilter_state_pre(centres[c], k_filters_[f]);
+                f++;
+                c++;
+            }
+        }
+    }
+
+    void ClusterTracker::prune_unused_kfilters()
+    {
+        size_t deleted = 0, i = 0;
+        for (auto it = objID.begin(); it != objID.end(); it++)
+        {
+            if (*it == -1) // no matching cluster for this filter
+            {
+                objID.erase(it--); // remove '-1' from objID --> thus sizes of filters and objects remain the same
+                k_filters_.erase(k_filters_.begin() + i - deleted++);
+            }
+            i++;
+        }
+        kf_prune_ctr_ = 0;
+    }
+
+    std::vector<int> ClusterTracker::match_objID(const std::vector<geometry_msgs::Point> &pred, const std::vector<geometry_msgs::Point> &cCentres, bool *cluster_used)
     {
         std::vector<int> vec(pred.size(), -1); // Initializing object ID vector with negative ones
 
@@ -240,11 +295,11 @@ namespace point_cloud
         // Matching objectID to KF
         for (size_t i = 0; i < k_filters_.size(); i++)
         {
-            std::pair<int, int> minIdx(findMinIDX(distMatrix)); // find closest match
-            if (minIdx.first != -1)                             // if a match was found, then
+            std::pair<int, int> minIdx(find_min_IDX(distMatrix)); // find closest match
+            if (minIdx.first != -1)                               // if a match was found, then
             {
-                vec[minIdx.first] = minIdx.second; // save this match
-                used[minIdx.second] = true;        // record that this cluster was matched
+                vec[minIdx.first] = minIdx.second;  // save this match
+                cluster_used[minIdx.second] = true; // record that this cluster was matched
 
                 distMatrix[minIdx.first] = std::vector<float>(cCentres.size(), std::numeric_limits<float>::max()); // erase the row (filter)
                 for (size_t r = 0; r < distMatrix.size(); r++)                                                     // erase the column (point cloud)
@@ -280,27 +335,7 @@ namespace point_cloud
 
             if (transform_)
             {
-                tf2_ros::Buffer buf_;
-                tf2_ros::TransformListener tfListener(buf_);
-
-                geometry_msgs::Point trans_cluster;
-
-                geometry_msgs::TransformStamped trans_msg;
-                tf2::Stamped<tf2::Transform> stamped_trans;
-                try
-                {
-                    trans_msg = buf_.lookupTransform(output_frame_, scan_frame_, ros::Time(0), ros::Duration(0.2));
-                    tf2::fromMsg(trans_msg, stamped_trans);
-                    trans_msg = tf2::toMsg(tf2::Stamped<tf2::Transform>(stamped_trans.inverse(), stamped_trans.stamp_, stamped_trans.frame_id_));
-                }
-                catch (tf2::TransformException &ex)
-                {
-                    ROS_WARN("%s", ex.what());
-                    continue;
-                }
-
-                tf2::doTransform(clusterC, trans_cluster, trans_msg);
-                clusterC = trans_cluster;
+                transform_centre(clusterC);
             }
 
             m.pose.position.x = clusterC.x;
@@ -311,12 +346,37 @@ namespace point_cloud
         }
     }
 
+    void ClusterTracker::transform_centre(geometry_msgs::Point &centres)
+    {
+        tf2_ros::Buffer buf_;
+        tf2_ros::TransformListener tfListener(buf_);
+
+        geometry_msgs::Point trans_cluster;
+
+        geometry_msgs::TransformStamped trans_msg;
+        tf2::Stamped<tf2::Transform> stamped_trans;
+        try
+        {
+            trans_msg = buf_.lookupTransform(output_frame_, scan_frame_, ros::Time(0), ros::Duration(0.2));
+            tf2::fromMsg(trans_msg, stamped_trans);
+            trans_msg = tf2::toMsg(tf2::Stamped<tf2::Transform>(stamped_trans.inverse(), stamped_trans.stamp_, stamped_trans.frame_id_));
+        }
+        catch (tf2::TransformException &ex)
+        {
+            ROS_WARN("%s", ex.what());
+            return;
+        }
+
+        tf2::doTransform(centres, trans_cluster, trans_msg);
+        centres = trans_cluster;
+    }
+
     void ClusterTracker::sync_cluster_publishers_size(size_t num_clusters)
     {
         boost::mutex::scoped_lock lock(mutex_);
 
         // Remove unnecessary publishers from time to time
-        if (cluster_pubs_.size() > num_clusters && publisher_prune_ctr_++ > prune_interval) // watch for ctr++ (!)
+        if (cluster_pubs_.size() > num_clusters && publisher_prune_ctr_++ > prune_interval)
         {
             while (cluster_pubs_.size() > num_clusters)
             {
@@ -346,25 +406,54 @@ namespace point_cloud
     {
         pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::fromROSMsg(*cloud_msg, *input_cloud);
-        std::vector<pcl::PointIndices> cluster_indices;
 
         pcl::search::KdTree<pcl::PointXYZ>::Ptr search_tree(new pcl::search::KdTree<pcl::PointXYZ>);
         search_tree->setInputCloud(input_cloud);
 
-        pcl::EuclideanClusterExtraction<pcl::PointXYZ> cluster_extr;
+        std::vector<pcl::PointIndices> cluster_indices;
 
-        cluster_extr.setClusterTolerance(tolerance_);
-        cluster_extr.setMaxClusterSize(cluster_max_);
-        cluster_extr.setMinClusterSize(cluster_min_);
-
-        cluster_extr.setSearchMethod(search_tree);
-        cluster_extr.setInputCloud(input_cloud);
-        cluster_extr.extract(cluster_indices);
+        cluster_extr_.setSearchMethod(search_tree);
+        cluster_extr_.setInputCloud(input_cloud);
+        cluster_extr_.extract(cluster_indices);
 
         std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> cluster_vec;
         std::vector<pcl::PointXYZ> cluster_centres;
 
-        // Get clusters and their respective centres
+        extract_cluster_data(input_cloud, cluster_indices, cluster_vec, cluster_centres);
+
+        sync_cluster_publishers_size(cluster_vec.size());
+
+        boost::unique_lock<boost::recursive_mutex> flock(filter_mutex_);
+        if (first_frame_)
+        {
+            _init_KFilters(cluster_centres.size());
+            for (size_t i = 0; i < cluster_centres.size(); i++)
+            {
+                _set_kfilter_state_pre(cluster_centres[i], k_filters_[i]);
+            }
+            first_frame_ = false;
+        }
+        else
+        {
+            std_msgs::Float32MultiArray cc;
+            for (size_t i = 0; i < cluster_centres.size(); i++)
+            {
+                auto c = cluster_centres.at(i);
+                cc.data.push_back(c.x);
+                cc.data.push_back(c.y);
+                cc.data.push_back(c.z);
+            }
+            KFTrack(cc);
+        }
+
+        boost::mutex::scoped_lock lock(mutex_);
+        for (size_t i = 0; i < objID.size(); ++i)
+            if (objID[i] != -1)
+                publish_cloud(*(cluster_pubs_[i]), cluster_vec[objID[i]]);
+    }
+
+    void ClusterTracker::extract_cluster_data(const pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud, const std::vector<pcl::PointIndices> &cluster_indices, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &cluster_vec, std::vector<pcl::PointXYZ> &cluster_centres)
+    {
         for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); it++)
         {
             pcl::PointCloud<pcl::PointXYZ>::Ptr _cluster(new pcl::PointCloud<pcl::PointXYZ>);
@@ -387,44 +476,8 @@ namespace point_cloud
             cluster_vec.push_back(_cluster);
             cluster_centres.push_back(centre);
         }
-
-        sync_cluster_publishers_size(cluster_vec.size());
-
-        boost::unique_lock<boost::recursive_mutex> flock(filter_mutex_);
-        if (first_frame_)
-        {
-            _init_KFilters(cluster_vec.size());
-            for (size_t i = 0; i < cluster_vec.size(); i++)
-            {
-                geometry_msgs::Point pt;
-                pt.x = cluster_centres.at(i).x;
-                pt.y = cluster_centres.at(i).y;
-
-                k_filters_[i]->statePre.at<float>(0) = pt.x;
-                k_filters_[i]->statePre.at<float>(1) = pt.y;
-                k_filters_[i]->statePre.at<float>(2) = 0;
-                k_filters_[i]->statePre.at<float>(3) = 0;
-            }
-            first_frame_ = false;
-        }
-        else
-        {
-            std_msgs::Float32MultiArray cc;
-            for (size_t i = 0; i < cluster_centres.size(); i++)
-            {
-                auto c = cluster_centres.at(i);
-                cc.data.push_back(c.x);
-                cc.data.push_back(c.y);
-                cc.data.push_back(c.z);
-            }
-            KFTrack(cc);
-        }
-
-        boost::mutex::scoped_lock lock(mutex_);
-        for (size_t i = 0; i < objID.size(); ++i)
-            if (objID[i] != -1)
-                publish_cloud(*(cluster_pubs_[i]), cluster_vec[objID[i]]);
     }
+
 }
 
 PLUGINLIB_EXPORT_CLASS(point_cloud::ClusterTracker, nodelet::Nodelet)
