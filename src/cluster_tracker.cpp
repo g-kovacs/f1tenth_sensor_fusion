@@ -88,7 +88,7 @@ namespace point_cloud
         tolerance_ = private_nh_.param<double>("tracker_tolerance", 0.2);
         cluster_max_ = private_nh_.param<int>("max_cluster_size", 70);
         cluster_min_ = private_nh_.param<int>("min_cluster_size", 20);
-        return private_nh_.param("concurrency_level", 0);
+        return private_nh_.param("tracker_concurrency_level", 0);
     }
 
     void ClusterTracker::_init_KFilters(size_t cnt)

@@ -60,7 +60,7 @@ namespace point_cloud
     private_nh_.param<std::string>("converter_subscription_topic", subscription_topic_, "scan");
     private_nh_.param<double>("transform_tolerance", transform_tolerance_, 0.01);
 
-    int concurrency_level = private_nh_.param("concurrency_level", concurrency_level);
+    int concurrency_level = private_nh_.param("converter_concurrency_level", 0);
     std::stringstream ss;
     ss << "Concurrency level: " << concurrency_level;
     NODELET_INFO(ss.str().c_str());

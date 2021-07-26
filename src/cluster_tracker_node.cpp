@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
 {
     ros::init(argc, argv, "cluster_tracker_node");
     ros::NodeHandle private_nh("~");
-    int concurrency_level = private_nh.param("concurrency_level", 4);
+    bool concurrency = private_nh.param("concurrency", false);
 
     nodelet::Loader nodelet;
     nodelet::M_string remap(ros::names::getRemappings());
@@ -15,9 +15,9 @@ int main(int argc, char *argv[])
     nodelet.load("cluster_tracker_nodelet", "point_cloud/cluster_tracker_nodelet", remap, nargv);
 
     boost::shared_ptr<ros::MultiThreadedSpinner> spinner;
-    if (concurrency_level)
+    if (concurrency)
     {
-        spinner.reset(new ros::MultiThreadedSpinner(static_cast<uint32_t>(concurrency_level)));
+        spinner.reset(new ros::MultiThreadedSpinner(static_cast<uint32_t>(8)));
     }
     else
     {

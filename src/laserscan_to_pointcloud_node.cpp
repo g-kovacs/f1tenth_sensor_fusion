@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "laser2pc_node");
   ros::NodeHandle private_nh("~");
-  int concurrency_level = private_nh.param("concurrency_level", 0);
+  int concurrency_level = private_nh.param("converter_concurrency_level", 0);
 
   nodelet::Loader nodelet;
   nodelet::M_string remap(ros::names::getRemappings());
