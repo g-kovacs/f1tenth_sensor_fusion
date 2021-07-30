@@ -38,14 +38,14 @@
  * Author: Rein Appeldoorn
  */
 
-#include <point_cloud/laserscan_to_pointcloud_nodelet.h>
+#include <f1tenth_sensor_fusion/laserscan_to_pointcloud_nodelet.h>
 #include <sensor_msgs/LaserScan.h>
 #include <pluginlib/class_list_macros.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <string>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 
-namespace point_cloud
+namespace f1tenth_sensor_fusion
 {
   LaserScanToPointCloudNodelet::LaserScanToPointCloudNodelet()
   {
@@ -159,4 +159,4 @@ namespace point_cloud
   }
 } // namespace pointcloud_to_laserscan
 
-PLUGINLIB_EXPORT_CLASS(point_cloud::LaserScanToPointCloudNodelet, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(f1tenth_sensor_fusion::LaserScanToPointCloudNodelet, nodelet::Nodelet)

@@ -2,7 +2,7 @@
 <package format="2">
   <name>f1tenth_sensor_fusion</name>
   <version>0.0.0</version>
-  <description>The point_cloud package</description>
+  <description>The f1tenth_sensor_fusion package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->

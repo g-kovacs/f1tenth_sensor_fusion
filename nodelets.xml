@@ -1,7 +1,7 @@
 <library path="lib/liblaser2pc">
 
-  <class name="point_cloud/laserscan_to_pointcloud_nodelet"
-   type="point_cloud::LaserScanToPointCloudNodelet"
+  <class name="f1tenth_sensor_fusion/laserscan_to_pointcloud_nodelet"
+   type="f1tenth_sensor_fusion::LaserScanToPointCloudNodelet"
    base_class_type="nodelet::Nodelet">
     <description>
       Nodelet to convert sensor_msgs/LaserScan to sensor_msgs/PointCloud2.
@@ -10,8 +10,8 @@
 
 </library>
 <library path="lib/libcluster_track">
-  <class name="point_cloud/cluster_tracker_nodelet"
-    type="point_cloud::ClusterTracker"
+  <class name="f1tenth_sensor_fusion/cluster_tracker_nodelet"
+    type="f1tenth_sensor_fusion::ClusterTracker"
     base_class_type="nodelet::Nodelet">
       <description>
         Nodelet to detect and track clusters found in the LiDAR scan.

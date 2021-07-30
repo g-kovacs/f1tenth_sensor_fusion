@@ -15,7 +15,7 @@
 *   
 */
 
-#include <point_cloud/cluster_tracker.h>
+#include <f1tenth_sensor_fusion/cluster_tracker.h>
 #include <pluginlib/class_list_macros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Int32MultiArray.h>
@@ -25,7 +25,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-namespace point_cloud
+namespace f1tenth_sensor_fusion
 {
     ClusterTracker::ClusterTracker() {}
     ClusterTracker::~ClusterTracker()
@@ -480,4 +480,4 @@ namespace point_cloud
 
 }
 
-PLUGINLIB_EXPORT_CLASS(point_cloud::ClusterTracker, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(f1tenth_sensor_fusion::ClusterTracker, nodelet::Nodelet)

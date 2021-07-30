@@ -114,7 +114,7 @@ find_package(OpenCV)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES point_cloud
+  LIBRARIES f1tenth_sensor_fusion
   CATKIN_DEPENDS laser_geometry message_filters sensor_msgs tf2 tf2_ros tf2_sensor_msgs nodelet roscpp rospy std_msgs pcl_ros
 #  DEPENDS system_lib
 )
