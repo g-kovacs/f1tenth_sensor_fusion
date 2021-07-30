@@ -20,7 +20,7 @@ private:
 Laser2PC::Laser2PC()
 {
     laserSub_ = node_.subscribe<sensor_msgs::LaserScan>("/scan", 100, &Laser2PC::scanCallback, this);
-    pcPub_ = node_.advertise<sensor_msgs::PointCloud2>("/filtered_cloud", 100, false);
+    pcPub_ = node_.advertise<sensor_msgs::PointCloud2>("/cloud", 100, false);
 }
 
 void Laser2PC::scanCallback(const sensor_msgs::LaserScan::ConstPtr &scan)

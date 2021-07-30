@@ -151,8 +151,8 @@ add_library(cluster_track src/cluster_tracker.cpp)
 # add_executable(${PROJECT_NAME}_node src/point_cloud_node.cpp)
 
 #add_executable(primitive_laser2pc src/laser2pc.cpp)
-add_executable(laser2pc_node src/laserscan_to_pointcloud_node.cpp)
-add_executable(cluster_tracker_node src/cluster_tracker_node.cpp)
+#add_executable(laser2pc_node src/laserscan_to_pointcloud_node.cpp)
+#add_executable(cluster_tracker_node src/cluster_tracker_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -171,9 +171,9 @@ add_executable(cluster_tracker_node src/cluster_tracker_node.cpp)
 
 #target_link_libraries(primitive_laser2pc ${catkin_LIBRARIES})
 target_link_libraries(laser2pc ${catkin_LIBRARIES})
-target_link_libraries(laser2pc_node laser2pc ${catkin_LIBRARIES})
+#target_link_libraries(laser2pc_node laser2pc ${catkin_LIBRARIES})
 target_link_libraries(cluster_track ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-target_link_libraries(cluster_tracker_node cluster_track ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+#target_link_libraries(cluster_tracker_node cluster_track ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 #############
 ## Install ##
