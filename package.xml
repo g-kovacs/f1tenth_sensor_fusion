@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>point_cloud</name>
+  <name>f1tenth_sensor_fusion</name>
   <version>0.0.0</version>
   <description>The point_cloud package</description>
 
