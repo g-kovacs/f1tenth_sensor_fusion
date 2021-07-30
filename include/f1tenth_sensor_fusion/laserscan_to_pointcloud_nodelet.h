@@ -38,8 +38,8 @@
  * Author: Rein Appeldoorn
  */
 
-#ifndef POINT_CLOUD_LASERSCAN_TO_POINTCLOUD_NODELET_H
-#define POINT_CLOUD_LASERSCAN_TO_POINTCLOUD_NODELET_H
+#ifndef F1TENTH_SENSOR_FUSION_LASERSCAN_TO_POINTCLOUD_NODELET_H
+#define F1TENTH_SENSOR_FUSION_LASERSCAN_TO_POINTCLOUD_NODELET_H
 
 #include <boost/thread/mutex.hpp>
 #include <laser_geometry/laser_geometry.h>
@@ -52,7 +52,7 @@
 #include <tf2_ros/message_filter.h>
 #include <tf2_ros/transform_listener.h>
 
-namespace point_cloud
+namespace f1tenth_sensor_fusion
 {
   typedef tf2_ros::MessageFilter<sensor_msgs::LaserScan> MessageFilter;
 
@@ -92,6 +92,6 @@ namespace point_cloud
     double transform_tolerance_;
   };
 
-} // namespace point_cloud
+} // namespace f1tenth_sensor_fusion
 
-#endif // POINT_CLOUD__LASERSCAN_TO_POINTCLOUD_NODELET_H
+#endif // F1TENTH_SENSOR_FUSION__LASERSCAN_TO_POINTCLOUD_NODELET_H

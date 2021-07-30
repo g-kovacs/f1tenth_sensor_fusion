@@ -15,8 +15,8 @@
 *   
 */
 
-#ifndef POINT_CLOUD__CLUSTER_TRACKER_H
-#define POINT_CLOUD__CLUSTER_TRACKER_H
+#ifndef F1TENTH_SENSOR_FUSION__CLUSTER_TRACKER_H
+#define F1TENTH_SENSOR_FUSION__CLUSTER_TRACKER_H
 
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
@@ -40,7 +40,7 @@
 #include <vector>
 #include <memory>
 
-namespace point_cloud
+namespace f1tenth_sensor_fusion
 {
 
 #define prune_interval 50
@@ -170,4 +170,4 @@ namespace point_cloud
     };
 }
 
-#endif // POINT_CLOUD__CLUSTER_TRACKER_H
+#endif // F1TENTH_SENSOR_FUSION__CLUSTER_TRACKER_H
