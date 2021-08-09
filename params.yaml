@@ -17,3 +17,6 @@ converter_concurrency_level: 2
 #converter_target_frame: "base_link"
 #converter_subscription_topic: "your_topic"
 #transform_tolerance: 0.01 # default: 0.01
+
+# Colormap
+#colormap_subscription_topic: "topic"
