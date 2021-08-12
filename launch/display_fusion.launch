@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+
+  <include file="$(find f1tenth_sensor_fusion)/launch/fusion.launch" />
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find f1tenth_sensor_fusion)/rviz/fusion.rviz" output="screen" />
+
+</launch>
