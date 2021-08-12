@@ -11,6 +11,7 @@ Panels:
         - /Fusion1/cam_points1
         - /Fusion1/DisparityNorm1
         - /Axes1
+        - /MarkerArray1
       Splitter Ratio: 0.5
     Tree Height: 355
   - Class: rviz/Selection
@@ -25,6 +26,7 @@ Panels:
   - Class: rviz/Views
     Expanded:
       - /Current View1
+      - /Current View1/Focal Point1
     Name: Views
     Splitter Ratio: 0.5
   - Class: rviz/Time
@@ -137,6 +139,14 @@ Visualization Manager:
       Radius: 0.03999999910593033
       Reference Frame: <Fixed Frame>
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /viz
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -165,7 +175,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.46394944190979
+      Distance: 2.5128355026245117
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -173,7 +183,7 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.800000011920929
+        X: 0
         Y: 0
         Z: 0
       Focal Shape Fixed Size: true
@@ -181,9 +191,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 0.4446945786476135
       Target Frame: <Fixed Frame>
-      Yaw: 0
+      Yaw: 3.1465001106262207
     Saved: ~
 Window Geometry:
   DisparityNorm:
