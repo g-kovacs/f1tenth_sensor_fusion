@@ -2,18 +2,30 @@
 concurrency: true
 
 # Tracker parameters
-tracker_concurrency_level: 4
-visualize_rviz: true
-max_cluster_size: 100 # default: 70
-#min_cluster_size: 30 # default: 20
-#tracker_tolerance: 0.2 #2 cm
-#target_frame: "base_link"
-#scan_frame: "base_link"
-#scan_topic: "your_topic"
+tracker:
+  laser_cloud:
+    concurrency_level: 4
+    visualize_rviz: true
+    max_cluster_size: 100 # default: 70
+    #min_cluster_size: 30 # default: 20
+    #tolerance: 0.2 #2 cm
+    #target_frame: "base_link"
+    scan_frame: "laser"
+    scan_topic: "cloud"
+  camera_cloud:
+    concurrency_level: 4
+    visualize_rviz: true
+    #max_cluster_size: 100 # default: 1000
+    #min_cluster_size: 40 # default: 40
+    #tolerance: 0.2 #2 cm
+    #target_frame: "base_link"
+    #scan_frame: "base_link"
+    #scan_topic: "your_topic"
 
 
 # Converter parameters
-converter_concurrency_level: 2
-#converter_target_frame: "base_link"
-#converter_subscription_topic: "your_topic"
-#transform_tolerance: 0.01 # default: 0.01
+converter:
+  concurrency_level: 2
+  #target_frame: "base_link"
+  #subscription_topic: "your_topic"
+  #transform_tolerance: 0.01 # default: 0.01

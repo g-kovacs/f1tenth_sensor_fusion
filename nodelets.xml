@@ -10,8 +10,15 @@
 
 </library>
 <library path="lib/libcluster_track">
-  <class name="f1tenth_sensor_fusion/cluster_tracker_nodelet"
-    type="f1tenth_sensor_fusion::ClusterTracker"
+  <class name="f1tenth_sensor_fusion/lidar_tracker_nodelet"
+    type="f1tenth_sensor_fusion::LidarTracker"
+    base_class_type="nodelet::Nodelet">
+      <description>
+        Nodelet to detect and track clusters found in the LiDAR scan.
+      </description>
+  </class>
+  <class name="f1tenth_sensor_fusion/camera_tracker_nodelet"
+    type="f1tenth_sensor_fusion::CameraTracker"
     base_class_type="nodelet::Nodelet">
       <description>
         Nodelet to detect and track clusters found in the LiDAR scan.

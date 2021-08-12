@@ -138,7 +138,7 @@ include_directories(
 # )
 
 add_library(laser2pc src/laserscan_to_pointcloud_nodelet.cpp)
-add_library(cluster_track src/cluster_tracker.cpp)
+add_library(cluster_track src/cluster_tracker.cpp src/trackers.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

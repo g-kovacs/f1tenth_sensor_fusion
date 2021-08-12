@@ -28,10 +28,6 @@
 namespace f1tenth_sensor_fusion
 {
     ClusterTracker::ClusterTracker() {}
-    ClusterTracker::~ClusterTracker()
-    {
-        k_filters_.clear();
-    }
 
     void ClusterTracker::onInit()
     {
@@ -81,14 +77,16 @@ namespace f1tenth_sensor_fusion
 
     int ClusterTracker::_load_params()
     {
-        private_nh_.param<bool>("visualize_rviz", visualize_, true);
-        private_nh_.param<std::string>("scan_frame", scan_frame_, "laser");
-        private_nh_.param<std::string>("target_frame", output_frame_, scan_frame_.c_str());
-        private_nh_.param<std::string>("scan_topic", scan_topic_, "cloud");
-        tolerance_ = private_nh_.param<double>("tracker_tolerance", 0.2);
-        cluster_max_ = private_nh_.param<int>("max_cluster_size", 70);
-        cluster_min_ = private_nh_.param<int>("min_cluster_size", 20);
-        return private_nh_.param("tracker_concurrency_level", 0);
+        auto prefix = std::string("tracker/").append(_tracker_name);
+        ROS_INFO(prefix.c_str());
+        private_nh_.param<bool>(prefix + std::string("/visualize_rviz"), visualize_, true);
+        private_nh_.param<std::string>(prefix + std::string("/scan_frame"), scan_frame_, "");
+        private_nh_.param<std::string>(prefix + std::string("/target_frame"), output_frame_, scan_frame_.c_str());
+        private_nh_.param<std::string>(prefix + std::string("/scan_topic"), scan_topic_, "");
+        tolerance_ = private_nh_.param<double>(prefix + std::string("/tolerance"), 0.2);
+        cluster_max_ = private_nh_.param<int>(prefix + std::string("/max_cluster_size"), 70);
+        cluster_min_ = private_nh_.param<int>(prefix + std::string("/min_cluster_size"), 20);
+        return private_nh_.param(prefix + std::string("/concurrency_level"), 0);
     }
 
     void ClusterTracker::_init_KFilters(size_t cnt)
@@ -321,9 +319,9 @@ namespace f1tenth_sensor_fusion
             m.id = i;
             m.header.frame_id = output_frame_;
             m.type = visualization_msgs::Marker::CUBE;
-            m.scale.x = 0.2;
-            m.scale.y = 0.2;
-            m.scale.z = 0.2;
+            m.scale.x = 0.08;
+            m.scale.y = 0.08;
+            m.scale.z = 0.08;
             m.action = visualization_msgs::Marker::ADD;
             m.color.a = 1.0;
             m.color.r = i % 2 ? 1 : 0;
@@ -477,7 +475,4 @@ namespace f1tenth_sensor_fusion
             cluster_centres.push_back(centre);
         }
     }
-
 }
-
-PLUGINLIB_EXPORT_CLASS(f1tenth_sensor_fusion::ClusterTracker, nodelet::Nodelet)

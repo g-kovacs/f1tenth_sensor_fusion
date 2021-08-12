@@ -50,12 +50,13 @@ namespace f1tenth_sensor_fusion
     {
     public:
         ClusterTracker();
-        ~ClusterTracker();
+        virtual ~ClusterTracker() = 0;
 
-    private:
-        /// Initialize nodelet with necessary parameters.
+    protected:
+        std::string _tracker_name;
         virtual void onInit();
 
+        /// Initialize nodelet with necessary parameters.
         int _load_params();
 
         /**

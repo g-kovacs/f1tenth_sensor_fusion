@@ -56,13 +56,13 @@ namespace f1tenth_sensor_fusion
     boost::mutex::scoped_lock lock(connect_mutex_);
     private_nh_ = getPrivateNodeHandle();
 
-    private_nh_.param<std::string>("converter_target_frame", target_frame_, "");
-    private_nh_.param<std::string>("converter_subscription_topic", subscription_topic_, "scan");
-    private_nh_.param<double>("transform_tolerance", transform_tolerance_, 0.01);
+    private_nh_.param<std::string>("converter/target_frame", target_frame_, "");
+    private_nh_.param<std::string>("converter/subscription_topic", subscription_topic_, "scan");
+    private_nh_.param<double>("converter/transform_tolerance", transform_tolerance_, 0.01);
 
-    int concurrency_level = private_nh_.param("converter_concurrency_level", 0);
+    int concurrency_level = private_nh_.param("converter/concurrency_level", 0);
     std::stringstream ss;
-    ss << "Concurrency level: " << concurrency_level;
+    ss << "Concverter concurrency level: " << concurrency_level;
     NODELET_INFO(ss.str().c_str());
 
     // Check if explicitly single threaded, otherwise, let nodelet manager dictate thread pool size

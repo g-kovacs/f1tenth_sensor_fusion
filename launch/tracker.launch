@@ -1,6 +1,6 @@
 <launch>
     <node pkg="nodelet" type="nodelet" name="manager_" args="manager" output="screen"/>
-    <node pkg="nodelet" type="nodelet" name="ClusterTracker" args="load f1tenth_sensor_fusion/cluster_tracker_nodelet manager_" output="screen">
+    <node pkg="nodelet" type="nodelet" name="LidarTracker" args="load f1tenth_sensor_fusion/lidar_tracker_nodelet manager_" output="screen">
         <rosparam command="load" file="$(find f1tenth_sensor_fusion)/params.yaml" />
     </node>
     <node pkg="nodelet" type="nodelet" name="ScanConverter" args="load f1tenth_sensor_fusion/laserscan_to_pointcloud_nodelet manager_" output="screen">
