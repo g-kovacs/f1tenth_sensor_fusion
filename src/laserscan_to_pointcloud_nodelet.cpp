@@ -62,7 +62,8 @@ namespace f1tenth_sensor_fusion
 
     int concurrency_level = private_nh_.param("converter/concurrency_level", 0);
     std::stringstream ss;
-    ss << "Concverter concurrency level: " << concurrency_level;
+    ss << "Converter concurrency level: " << concurrency_level << std::endl;
+    ss << "Converter target frame: " << target_frame_ << std::endl;
     NODELET_INFO(ss.str().c_str());
 
     // Check if explicitly single threaded, otherwise, let nodelet manager dictate thread pool size

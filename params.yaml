@@ -10,7 +10,7 @@ tracker:
     #min_cluster_size: 30 # default: 20
     #tolerance: 0.2 #2 cm
     #target_frame: "base_link"
-    scan_frame: "laser"
+    scan_frame: "fusion_base"
     scan_topic: "cloud"
   camera_cloud:
     concurrency_level: 4
@@ -26,6 +26,6 @@ tracker:
 # Converter parameters
 converter:
   concurrency_level: 2
-  #target_frame: "base_link"
+  target_frame: "fusion_base"
   #subscription_topic: "your_topic"
   #transform_tolerance: 0.01 # default: 0.01

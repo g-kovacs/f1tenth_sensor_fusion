@@ -39,6 +39,11 @@ namespace f1tenth_sensor_fusion
 
         int concurrency_level = _load_params();
 
+        std::stringstream ss;
+        ss << _tracker_name << " concurrency level: " << concurrency_level << std::endl;
+        ss << _tracker_name << " target frame: " << output_frame_ << std::endl;
+        NODELET_INFO(ss.str().c_str());
+
         cluster_extr_.setClusterTolerance(tolerance_);
         cluster_extr_.setMaxClusterSize(cluster_max_);
         cluster_extr_.setMinClusterSize(cluster_min_);
