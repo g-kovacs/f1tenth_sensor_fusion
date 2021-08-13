@@ -15,19 +15,18 @@
 *   
 */
 
-#pragma once
-
 #include <f1tenth_sensor_fusion/cluster_tracker.h>
 #include <pluginlib/class_list_macros.h>
 
 namespace f1tenth_sensor_fusion
 {
+
     class LidarTracker : public ClusterTracker
     {
     public:
         LidarTracker()
         {
-            _tracker_name = "laser_cloud";
+            _config = TrackerConfig("laser_cloud", 20, 100, 0.1, "laser", "scan");
         }
 
     private:
@@ -42,7 +41,7 @@ namespace f1tenth_sensor_fusion
     public:
         CameraTracker()
         {
-            _tracker_name = "camera_cloud";
+            _config = TrackerConfig("camera_cloud", 40, 400, 0.1, "camera", "points");
         }
 
     private:

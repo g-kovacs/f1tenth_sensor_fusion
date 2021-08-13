@@ -39,14 +39,13 @@ namespace f1tenth_sensor_fusion
 
         int concurrency_level = _load_params();
 
-        std::stringstream ss;
-        ss << _tracker_name << " concurrency level: " << concurrency_level << std::endl;
-        ss << _tracker_name << " target frame: " << output_frame_ << std::endl;
-        NODELET_INFO(ss.str().c_str());
+#ifndef NDEBUG
+        _config.info(concurrency_level);
+#endif
 
-        cluster_extr_.setClusterTolerance(tolerance_);
-        cluster_extr_.setMaxClusterSize(cluster_max_);
-        cluster_extr_.setMinClusterSize(cluster_min_);
+        cluster_extr_.setClusterTolerance(_config.tolerance);
+        cluster_extr_.setMaxClusterSize(_config.clust_max);
+        cluster_extr_.setMinClusterSize(_config.clust_min);
 
         // Check if explicitly single threaded, otherwise, let nodelet manager dictate thread pool size
         if (concurrency_level == 1)
@@ -68,29 +67,29 @@ namespace f1tenth_sensor_fusion
             input_queue_size_ = boost::thread::hardware_concurrency();
         }
 
-        transform_ = scan_frame_.compare(output_frame_) == 0 ? false : true;
+        transform_ = _config.scan_frame.compare(_config.target_frame) == 0 ? false : true;
 
         // Subscribe to topic with input data
-        sub_.subscribe(nh_, scan_topic_, input_queue_size_);
+        sub_.subscribe(nh_, _config.scan_topic, input_queue_size_);
         sub_.registerCallback(boost::bind(&ClusterTracker::cloudCallback, this, _1));
         // Init marker publisher if necessary
-        if (visualize_)
-            marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("viz", 100);
-        objID_pub_ = nh_.advertise<std_msgs::Int32MultiArray>("obj_id", 100);
+        if (_config.rviz)
+            marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(_config.tracker_name + std::string("/viz"), 100);
+        objID_pub_ = nh_.advertise<std_msgs::Int32MultiArray>(_config.tracker_name + std::string("obj_id"), 100);
         NODELET_INFO("Tracker nodelet initialized...");
     }
 
     int ClusterTracker::_load_params()
     {
-        auto prefix = std::string("tracker/").append(_tracker_name);
+        auto prefix = std::string("tracker/").append(_config.tracker_name);
         ROS_INFO(prefix.c_str());
-        private_nh_.param<bool>(prefix + std::string("/visualize_rviz"), visualize_, true);
-        private_nh_.param<std::string>(prefix + std::string("/scan_frame"), scan_frame_, "");
-        private_nh_.param<std::string>(prefix + std::string("/target_frame"), output_frame_, scan_frame_.c_str());
-        private_nh_.param<std::string>(prefix + std::string("/scan_topic"), scan_topic_, "");
-        tolerance_ = private_nh_.param<double>(prefix + std::string("/tolerance"), 0.2);
-        cluster_max_ = private_nh_.param<int>(prefix + std::string("/max_cluster_size"), 70);
-        cluster_min_ = private_nh_.param<int>(prefix + std::string("/min_cluster_size"), 20);
+        private_nh_.param<bool>(prefix + std::string("/visualize_rviz"), _config.rviz, _config.rviz);
+        private_nh_.param<std::string>(prefix + std::string("/scan_frame"), _config.scan_frame, _config.scan_frame);
+        private_nh_.param<std::string>(prefix + std::string("/target_frame"), _config.target_frame, _config.scan_frame.c_str());
+        private_nh_.param<std::string>(prefix + std::string("/scan_topic"), _config.scan_topic, _config.scan_topic);
+        _config.tolerance = private_nh_.param<double>(prefix + std::string("/tolerance"), 0.2);
+        _config.clust_max = private_nh_.param<int>(prefix + std::string("/max_cluster_size"), 100);
+        _config.clust_min = private_nh_.param<int>(prefix + std::string("/min_cluster_size"), 40);
         return private_nh_.param(prefix + std::string("/concurrency_level"), 0);
     }
 
@@ -147,7 +146,7 @@ namespace f1tenth_sensor_fusion
     {
         sensor_msgs::PointCloud2::Ptr clustermsg(new sensor_msgs::PointCloud2);
         pcl::toROSMsg(*cluster, *clustermsg);
-        clustermsg->header.frame_id = scan_frame_;
+        clustermsg->header.frame_id = _config.target_frame;
         clustermsg->header.stamp = ros::Time::now();
         pub.publish(*clustermsg);
     }
@@ -196,7 +195,7 @@ namespace f1tenth_sensor_fusion
             prune_unused_kfilters();
         }
 
-        if (visualize_)
+        if (_config.rviz)
         {
             visualization_msgs::MarkerArray markers;
             fit_markers(cCentres, objID, markers);
@@ -322,7 +321,7 @@ namespace f1tenth_sensor_fusion
 
             visualization_msgs::Marker m;
             m.id = i;
-            m.header.frame_id = output_frame_;
+            m.header.frame_id = _config.target_frame;
             m.type = visualization_msgs::Marker::CUBE;
             m.scale.x = 0.08;
             m.scale.y = 0.08;
@@ -345,6 +344,9 @@ namespace f1tenth_sensor_fusion
             m.pose.position.y = clusterC.y;
             m.pose.position.z = clusterC.z;
 
+            m.pose.orientation.w = 1;
+            m.pose.orientation.x = m.pose.orientation.y = m.pose.orientation.z = 0;
+
             markers.markers.push_back(m);
         }
     }
@@ -360,7 +362,7 @@ namespace f1tenth_sensor_fusion
         tf2::Stamped<tf2::Transform> stamped_trans;
         try
         {
-            trans_msg = buf_.lookupTransform(output_frame_, scan_frame_, ros::Time(0), ros::Duration(0.2));
+            trans_msg = buf_.lookupTransform(_config.target_frame, _config.scan_frame, ros::Time(0), ros::Duration(0.2));
             tf2::fromMsg(trans_msg, stamped_trans);
             trans_msg = tf2::toMsg(tf2::Stamped<tf2::Transform>(stamped_trans.inverse(), stamped_trans.stamp_, stamped_trans.frame_id_));
         }
@@ -394,7 +396,7 @@ namespace f1tenth_sensor_fusion
             try
             {
                 std::stringstream ss;
-                ss << "cluster_" << cluster_pubs_.size();
+                ss << _config.tracker_name << "/cluster_" << cluster_pubs_.size();
                 ros::Publisher *pub = new ros::Publisher(nh_.advertise<sensor_msgs::PointCloud2>(ss.str(), 100));
                 cluster_pubs_.push_back(pub);
             }
@@ -460,12 +462,13 @@ namespace f1tenth_sensor_fusion
         for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); it++)
         {
             pcl::PointCloud<pcl::PointXYZ>::Ptr _cluster(new pcl::PointCloud<pcl::PointXYZ>);
-            float x = 0.0f, y = 0.0f;
+            float x = 0.0f, y = 0.0f, z = 0.0f;
             for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); pit++)
             {
                 _cluster->push_back((*input_cloud)[*pit]);
                 x += _cluster->back().x;
                 y += _cluster->back().y;
+                z += _cluster->back().z;
             }
             _cluster->width = _cluster->size();
             _cluster->height = 1;
@@ -474,7 +477,7 @@ namespace f1tenth_sensor_fusion
             pcl::PointXYZ centre;
             centre.x = x / _cluster->size();
             centre.y = y / _cluster->size();
-            centre.z = 0.0;
+            centre.z = z == 0 ? 0 : (z / _cluster->size());
 
             cluster_vec.push_back(_cluster);
             cluster_centres.push_back(centre);

@@ -18,6 +18,7 @@
 #ifndef F1TENTH_SENSOR_FUSION__CLUSTER_TRACKER_H
 #define F1TENTH_SENSOR_FUSION__CLUSTER_TRACKER_H
 
+#include <f1tenth_sensor_fusion/tracker_config.hpp>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
 #include <boost/thread/mutex.hpp>
@@ -53,11 +54,10 @@ namespace f1tenth_sensor_fusion
         virtual ~ClusterTracker() = 0;
 
     protected:
-        std::string _tracker_name;
         virtual void onInit();
 
         /// Initialize nodelet with necessary parameters.
-        int _load_params();
+        virtual int _load_params();
 
         /**
          * Initialize a given number of Kalman-filters. Parameters only, the initial states must be set after calling this function.
@@ -156,18 +156,13 @@ namespace f1tenth_sensor_fusion
         ros::Publisher marker_pub_;
         message_filters::Subscriber<sensor_msgs::PointCloud2> sub_;
 
+        TrackerConfig _config;
+
         size_t input_queue_size_;
         size_t kf_prune_ctr_ = 0;
         size_t publisher_prune_ctr_ = 0;
-        double tolerance_;
-        int cluster_max_;
-        int cluster_min_;
-        bool visualize_;
         bool transform_;
         bool first_frame_ = true;
-        std::string output_frame_;
-        std::string scan_frame_;
-        std::string scan_topic_;
     };
 }
 
