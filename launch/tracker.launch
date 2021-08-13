@@ -1,9 +1,15 @@
 <launch>
     <node pkg="nodelet" type="nodelet" name="manager_" args="manager" output="screen"/>
-    <node pkg="nodelet" type="nodelet" name="LidarTracker" args="load f1tenth_sensor_fusion/lidar_tracker_nodelet manager_" output="screen">
-        <rosparam command="load" file="$(find f1tenth_sensor_fusion)/params.yaml" />
+
+    <!-- <node pkg="nodelet" type="nodelet" name="LidarTracker" args="load f1tenth_sensor_fusion/lidar_tracker_nodelet manager_" output="screen">
+        <rosparam command="load" file="$(find f1tenth_sensor_fusion)/params/lidar_cloud.yaml" />
+    </node> -->
+
+    <node pkg="nodelet" type="nodelet" name="CameraTracker" args="load f1tenth_sensor_fusion/camera_tracker_nodelet manager_" output="screen">
+        <rosparam command="load" file="$(find f1tenth_sensor_fusion)/params/camera_cloud.yaml" />
     </node>
+
     <node pkg="nodelet" type="nodelet" name="ScanConverter" args="load f1tenth_sensor_fusion/laserscan_to_pointcloud_nodelet manager_" output="screen">
-        <rosparam command="load" file="$(find f1tenth_sensor_fusion)/params.yaml" />
+        <rosparam command="load" file="$(find f1tenth_sensor_fusion)/params/laser_converter.yaml" />
     </node>
 </launch>
