@@ -75,22 +75,20 @@ namespace f1tenth_sensor_fusion
         // Init marker publisher if necessary
         if (_config.rviz)
             marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(_config.tracker_name + std::string("/viz"), 100);
-        objID_pub_ = nh_.advertise<std_msgs::Int32MultiArray>(_config.tracker_name + std::string("obj_id"), 100);
+        objID_pub_ = nh_.advertise<std_msgs::Int32MultiArray>(_config.tracker_name + std::string("/obj_id"), 100);
         NODELET_INFO("Tracker nodelet initialized...");
     }
 
     int ClusterTracker::_load_params()
     {
-        auto prefix = std::string("tracker/").append(_config.tracker_name);
-        ROS_INFO(prefix.c_str());
-        private_nh_.param<bool>(prefix + std::string("/visualize_rviz"), _config.rviz, _config.rviz);
-        private_nh_.param<std::string>(prefix + std::string("/scan_frame"), _config.scan_frame, _config.scan_frame);
-        private_nh_.param<std::string>(prefix + std::string("/target_frame"), _config.target_frame, _config.scan_frame.c_str());
-        private_nh_.param<std::string>(prefix + std::string("/scan_topic"), _config.scan_topic, _config.scan_topic);
-        _config.tolerance = private_nh_.param<double>(prefix + std::string("/tolerance"), 0.2);
-        _config.clust_max = private_nh_.param<int>(prefix + std::string("/max_cluster_size"), 100);
-        _config.clust_min = private_nh_.param<int>(prefix + std::string("/min_cluster_size"), 40);
-        return private_nh_.param(prefix + std::string("/concurrency_level"), 0);
+        _config.rviz = private_nh_.param<bool>("visualize_rviz", _config.rviz);
+        private_nh_.param<std::string>("scan_frame", _config.scan_frame, _config.scan_frame.c_str());
+        private_nh_.param<std::string>("target_frame", _config.target_frame, _config.scan_frame.c_str());
+        private_nh_.param<std::string>("scan_topic", _config.scan_topic, _config.scan_topic.c_str());
+        _config.tolerance = private_nh_.param<double>("tolerance", _config.tolerance);
+        _config.clust_max = private_nh_.param<int>("max_cluster_size", _config.clust_max);
+        _config.clust_min = private_nh_.param<int>("min_cluster_size", _config.clust_min);
+        return private_nh_.param("concurrency_level", 0);
     }
 
     void ClusterTracker::_init_KFilters(size_t cnt)

@@ -7,6 +7,7 @@ Panels:
         - /Global Options1
         - /Status1
         - /Fusion1
+        - /Fusion1/cam_points1
       Splitter Ratio: 0.5
     Tree Height: 719
   - Class: rviz/Selection
@@ -124,7 +125,7 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: RGB8
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Min Color: 0; 0; 0
@@ -139,7 +140,7 @@ Visualization Manager:
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Class: rviz/Image
           Enabled: false
           Image Topic: /mynteye/disparity/image_norm
@@ -170,6 +171,14 @@ Visualization Manager:
         "": true
       Queue Size: 100
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: false
+      Marker Topic: /camera_cloud/viz
+      Name: camera_markers
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -198,7 +207,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 5.208477973937988
+      Distance: 5.207647323608398
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -214,9 +223,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6746938228607178
+      Pitch: 0.5246941447257996
       Target Frame: <Fixed Frame>
-      Yaw: 3.4464645385742188
+      Yaw: 3.471456289291382
     Saved: ~
 Window Geometry:
   DisparityNorm:

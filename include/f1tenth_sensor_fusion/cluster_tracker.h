@@ -55,7 +55,9 @@ namespace f1tenth_sensor_fusion
 
     protected:
         virtual void onInit();
+        TrackerConfig _config;
 
+    private:
         /// Initialize nodelet with necessary parameters.
         virtual int _load_params();
 
@@ -155,8 +157,6 @@ namespace f1tenth_sensor_fusion
         ros::Publisher objID_pub_;
         ros::Publisher marker_pub_;
         message_filters::Subscriber<sensor_msgs::PointCloud2> sub_;
-
-        TrackerConfig _config;
 
         size_t input_queue_size_;
         size_t kf_prune_ctr_ = 0;

@@ -53,7 +53,7 @@ namespace f1tenth_sensor_fusion
             ss << "\tscan topic:\t" << scan_topic << endl;
             ss << "\ttarget frame:\t" << target_frame << endl;
             ss << "\tvisualize:\t" << rviz << endl;
-            cout << ss.str();
+            cout << ss.str() << endl;
         }
         bool rviz;
         int clust_min, clust_max;

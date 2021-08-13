@@ -56,15 +56,15 @@ namespace f1tenth_sensor_fusion
     boost::mutex::scoped_lock lock(connect_mutex_);
     private_nh_ = getPrivateNodeHandle();
 
-    private_nh_.param<std::string>("converter/target_frame", target_frame_, "");
-    private_nh_.param<std::string>("converter/subscription_topic", subscription_topic_, "scan");
-    private_nh_.param<double>("converter/transform_tolerance", transform_tolerance_, 0.01);
+    private_nh_.param<std::string>("target_frame", target_frame_, "");
+    private_nh_.param<std::string>("subscription_topic", subscription_topic_, "scan");
+    private_nh_.param<double>("transform_tolerance", transform_tolerance_, 0.01);
 
-    int concurrency_level = private_nh_.param("converter/concurrency_level", 0);
-    std::stringstream ss;
-    ss << "Converter concurrency level: " << concurrency_level << std::endl;
-    ss << "Converter target frame: " << target_frame_ << std::endl;
-    NODELET_INFO(ss.str().c_str());
+    int concurrency_level = private_nh_.param("concurrency_level", 0);
+
+#ifndef NDEBUG
+    info(concurrency_level);
+#endif
 
     // Check if explicitly single threaded, otherwise, let nodelet manager dictate thread pool size
     if (concurrency_level == 1)
@@ -123,6 +123,19 @@ namespace f1tenth_sensor_fusion
       NODELET_INFO("No subscibers to cloud, shutting down subscriber to laserscan");
       sub_.unsubscribe();
     }
+  }
+
+  void LaserScanToPointCloudNodelet::info(int concurrency)
+  {
+    std::stringstream ss;
+    ss << "Converter info:" << std::endl;
+    NODELET_INFO(ss.str().c_str());
+    ss.str(std::string());
+    ss << "\tconcurrency level:\t" << concurrency << std::endl;
+    ss << "\ttarget frame:\t" << target_frame_ << std::endl;
+    ss << "\tsubscription topic:\t" << subscription_topic_ << std::endl;
+    ss << "\ttransform tolerance:\t" << transform_tolerance_ << std::endl;
+    std::cout << ss.str() << std::endl;
   }
 
   void LaserScanToPointCloudNodelet::failureCallback(const sensor_msgs::LaserScanConstPtr &scan_msg,

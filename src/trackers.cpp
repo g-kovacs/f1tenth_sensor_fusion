@@ -26,13 +26,11 @@ namespace f1tenth_sensor_fusion
     public:
         LidarTracker()
         {
-            _config = TrackerConfig("laser_cloud", 20, 100, 0.1, "laser", "scan");
+            _config = TrackerConfig("laser_cloud", 20, 100, 0.1, "asd", "asd");
         }
-
-    private:
-        virtual void onInit()
+        ~LidarTracker()
         {
-            ClusterTracker::onInit();
+            ROS_INFO("LidarTracker destructor");
         }
     };
 
@@ -43,11 +41,9 @@ namespace f1tenth_sensor_fusion
         {
             _config = TrackerConfig("camera_cloud", 40, 400, 0.1, "camera", "points");
         }
-
-    private:
-        virtual void onInit()
+        ~CameraTracker()
         {
-            ClusterTracker::onInit();
+            ROS_INFO("CameraTracker destructor");
         }
     };
 }

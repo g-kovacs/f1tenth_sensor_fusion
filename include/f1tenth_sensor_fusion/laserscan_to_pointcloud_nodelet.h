@@ -73,6 +73,8 @@ namespace f1tenth_sensor_fusion
     void connectCb();
     void disconnectCb();
 
+    void info(int);
+
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
     ros::Publisher pub_;

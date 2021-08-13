@@ -1,0 +1,9 @@
+# LiDAR tracker parameters
+concurrency_level: 2
+visualize_rviz: true
+max_cluster_size: 150 # default: 100
+min_cluster_size: 30 # default: 20
+tolerance: 0.04 # [m]
+scan_frame: "fusion_base"
+scan_topic: "cloud"
+#target_frame: "base_link"
