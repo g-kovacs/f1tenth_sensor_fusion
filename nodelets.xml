@@ -1,10 +1,18 @@
-<library path="lib/liblaser2pc">
+<library path="lib/libconverters">
 
   <class name="f1tenth_sensor_fusion/laserscan_to_pointcloud_nodelet"
    type="f1tenth_sensor_fusion::LaserScanToPointCloudNodelet"
    base_class_type="nodelet::Nodelet">
     <description>
       Nodelet to convert sensor_msgs/LaserScan to sensor_msgs/PointCloud2.
+    </description>
+  </class>
+
+  <class name="f1tenth_sensor_fusion/colormap"
+   type="f1tenth_sensor_fusion::Colormap"
+   base_class_type="nodelet::Nodelet">
+    <description>
+      Nodelet to add a colormap to grayscale sensor_msgs/Image images.
     </description>
   </class>
 

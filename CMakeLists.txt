@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   pcl_ros
+  cv_bridge
 )
 
 find_package(OpenCV)
@@ -115,7 +116,7 @@ find_package(OpenCV)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES f1tenth_sensor_fusion
-  CATKIN_DEPENDS laser_geometry message_filters sensor_msgs tf2 tf2_ros tf2_sensor_msgs nodelet roscpp rospy std_msgs pcl_ros
+  CATKIN_DEPENDS laser_geometry message_filters sensor_msgs tf2 tf2_ros tf2_sensor_msgs nodelet roscpp rospy std_msgs pcl_ros cv_bridge
 #  DEPENDS system_lib
 )
 
@@ -137,7 +138,7 @@ include_directories(
 #   src/${PROJECT_NAME}/point_cloud.cpp
 # )
 
-add_library(laser2pc src/laserscan_to_pointcloud_nodelet.cpp)
+add_library(converters src/laserscan_to_pointcloud_nodelet.cpp src/colormap.cpp)
 add_library(cluster_track src/cluster_tracker.cpp src/trackers.cpp)
 
 ## Add cmake target dependencies of the library
@@ -170,7 +171,7 @@ add_library(cluster_track src/cluster_tracker.cpp src/trackers.cpp)
 # )
 
 #target_link_libraries(primitive_laser2pc ${catkin_LIBRARIES})
-target_link_libraries(laser2pc ${catkin_LIBRARIES})
+target_link_libraries(converters ${catkin_LIBRARIES})
 #target_link_libraries(laser2pc_node laser2pc ${catkin_LIBRARIES})
 target_link_libraries(cluster_track ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 #target_link_libraries(cluster_tracker_node cluster_track ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
@@ -209,7 +210,7 @@ catkin_install_python( PROGRAMS
 # )
 
 install(TARGETS
-  laser2pc
+  converters
   #primitive_laser2pc
   cluster_track
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
