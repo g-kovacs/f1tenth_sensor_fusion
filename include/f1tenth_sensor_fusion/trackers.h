@@ -38,8 +38,14 @@ namespace f1tenth_sensor_fusion
     public:
         CameraTracker();
 
-    private:
+    protected:
         virtual void onInit();
+    };
+
+    class CamDebug : public CameraTracker
+    {
+    public:
+        CamDebug();
     };
 }
 

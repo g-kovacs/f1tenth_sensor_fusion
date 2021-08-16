@@ -63,7 +63,13 @@ namespace f1tenth_sensor_fusion
         initialize(concurrency_level);
         NODELET_INFO("%s tracker nodelet initialized...", _config.tracker_name.c_str());
     }
+
+    CamDebug::CamDebug()
+    {
+        _config = TrackerConfig("cam_debug", 40, 400, 0.1, "camera", "points");
+    }
 }
 
 PLUGINLIB_EXPORT_CLASS(f1tenth_sensor_fusion::LidarTracker, nodelet::Nodelet);
 PLUGINLIB_EXPORT_CLASS(f1tenth_sensor_fusion::CameraTracker, nodelet::Nodelet);
+PLUGINLIB_EXPORT_CLASS(f1tenth_sensor_fusion::CamDebug, nodelet::Nodelet);
