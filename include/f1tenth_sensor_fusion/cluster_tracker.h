@@ -133,7 +133,7 @@ namespace f1tenth_sensor_fusion
          */
         void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg);
 
-        void extract_cluster_data(const pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud, const std::vector<pcl::PointIndices> &cluster_indices, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &cluster_vec, std::vector<pcl::PointXYZ> &cluster_centres);
+        void extract_cluster_data(const pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &cluster_vec, std::vector<pcl::PointXYZ> &cluster_centres);
 
         pcl::EuclideanClusterExtraction<pcl::PointXYZ> cluster_extr_;
         boost::recursive_mutex filter_mutex_;

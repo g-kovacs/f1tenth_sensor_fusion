@@ -1,0 +1,10 @@
+# Camera tracker parameters
+cam_debug:
+  concurrency_level: 4
+  visualize_rviz: true
+  max_cluster_size: 400 # default: 400
+  min_cluster_size: 30 # default: 40
+  tolerance: 0.005 # [m]
+  scan_frame: "fusion_base"
+  scan_topic: "mynteye/points/data_raw"
+  #target_frame: "base_link"

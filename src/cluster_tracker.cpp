@@ -390,19 +390,10 @@ namespace f1tenth_sensor_fusion
         pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::fromROSMsg(*cloud_msg, *input_cloud);
 
-        pcl::search::KdTree<pcl::PointXYZ>::Ptr search_tree(new pcl::search::KdTree<pcl::PointXYZ>);
-        search_tree->setInputCloud(input_cloud);
-
-        std::vector<pcl::PointIndices> cluster_indices;
-
-        cluster_extr_.setSearchMethod(search_tree);
-        cluster_extr_.setInputCloud(input_cloud);
-        cluster_extr_.extract(cluster_indices);
-
         std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> cluster_vec;
         std::vector<pcl::PointXYZ> cluster_centres;
 
-        extract_cluster_data(input_cloud, cluster_indices, cluster_vec, cluster_centres);
+        extract_cluster_data(input_cloud, cluster_vec, cluster_centres);
 
         sync_cluster_publishers_size(cluster_vec.size());
 
@@ -435,8 +426,17 @@ namespace f1tenth_sensor_fusion
                 publish_cloud(*(cluster_pubs_[i]), cluster_vec[objID[i]]);
     }
 
-    void ClusterTracker::extract_cluster_data(const pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud, const std::vector<pcl::PointIndices> &cluster_indices, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &cluster_vec, std::vector<pcl::PointXYZ> &cluster_centres)
+    void ClusterTracker::extract_cluster_data(const pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &cluster_vec, std::vector<pcl::PointXYZ> &cluster_centres)
     {
+        pcl::search::KdTree<pcl::PointXYZ>::Ptr search_tree(new pcl::search::KdTree<pcl::PointXYZ>);
+        search_tree->setInputCloud(input_cloud);
+
+        std::vector<pcl::PointIndices> cluster_indices;
+
+        cluster_extr_.setSearchMethod(search_tree);
+        cluster_extr_.setInputCloud(input_cloud);
+        cluster_extr_.extract(cluster_indices);
+
         for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); it++)
         {
             pcl::PointCloud<pcl::PointXYZ>::Ptr _cluster(new pcl::PointCloud<pcl::PointXYZ>);
