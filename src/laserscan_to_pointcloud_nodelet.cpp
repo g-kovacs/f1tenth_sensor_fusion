@@ -101,7 +101,7 @@ namespace f1tenth_sensor_fusion
     }
 
     pub_ =
-        nh_.advertise<sensor_msgs::PointCloud2>("cloud", 10, boost::bind(&LaserScanToPointCloudNodelet::connectCb, this),
+        nh_.advertise<sensor_msgs::PointCloud2>("lidar_cloud", 10, boost::bind(&LaserScanToPointCloudNodelet::connectCb, this),
                                                 boost::bind(&LaserScanToPointCloudNodelet::disconnectCb, this));
   }
 
@@ -110,7 +110,7 @@ namespace f1tenth_sensor_fusion
     boost::mutex::scoped_lock lock(connect_mutex_);
     if (pub_.getNumSubscribers() > 0 && sub_.getSubscriber().getNumPublishers() == 0)
     {
-      NODELET_INFO("Got a subscriber to cloud, starting laserscan subscriber");
+      NODELET_INFO("Got a subscriber to lidar_cloud, starting laserscan subscriber");
       sub_.subscribe(nh_, subscription_topic_, input_queue_size_);
     }
   }
@@ -120,7 +120,7 @@ namespace f1tenth_sensor_fusion
     boost::mutex::scoped_lock lock(connect_mutex_);
     if (pub_.getNumSubscribers() == 0)
     {
-      NODELET_INFO("No subscibers to cloud, shutting down subscriber to laserscan");
+      NODELET_INFO("No subscibers to lidar_cloud, shutting down subscriber to laserscan");
       sub_.unsubscribe();
     }
   }

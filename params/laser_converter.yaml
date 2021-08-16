@@ -1,5 +1,5 @@
 # Converter parameters
-concurrency_level: 2
+concurrency_level: 1
 target_frame: "fusion_base"
 #subscription_topic: "your_topic"
 #transform_tolerance: 0.01 # default: 0.01 [m]

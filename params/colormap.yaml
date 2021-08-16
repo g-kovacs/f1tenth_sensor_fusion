@@ -1,0 +1,2 @@
+subscription_topic: "grayscale"
+concurrency_level: 1
