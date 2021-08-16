@@ -1,0 +1,8 @@
+<launch>
+    <arg name="launch_prefix"   value="gdb -ex run --args"/>
+    <node pkg="nodelet" type="nodelet" name="manager_" args="manager" output="screen"/>
+    <node pkg="nodelet" type="nodelet" name="ColormapConverter" args="load f1tenth_sensor_fusion/colormap manager_" output="screen">
+        <rosparam command="load" file="$(find f1tenth_sensor_fusion)/params.yaml" />
+    </node>
+    <node pkg="grayscale" type="grayscale_node" name="GrayscaleConverter"/>
+</launch>
