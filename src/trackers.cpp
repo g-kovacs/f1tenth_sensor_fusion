@@ -15,37 +15,54 @@
 *   
 */
 
-#include <f1tenth_sensor_fusion/cluster_tracker.h>
+#include <f1tenth_sensor_fusion/trackers.h>
 #include <pluginlib/class_list_macros.h>
 
 namespace f1tenth_sensor_fusion
 {
-
-    class LidarTracker : public ClusterTracker
+    LidarTracker::LidarTracker()
     {
-    public:
-        LidarTracker()
-        {
-            _config = TrackerConfig("laser_cloud", 20, 100, 0.1, "asd", "asd");
-        }
-        ~LidarTracker()
-        {
-            ROS_INFO("LidarTracker destructor");
-        }
-    };
+        _config = TrackerConfig("laser_cloud", 20, 100, 0.1, "asd", "asd");
+    }
 
-    class CameraTracker : public ClusterTracker
+    void LidarTracker::onInit()
     {
-    public:
-        CameraTracker()
+        private_handle_ = getPrivateNodeHandle();
+        int concurrency_level = _load_params();
+        // Check if explicitly single threaded, otherwise, let nodelet manager dictate thread pool size
+        if (concurrency_level == 1)
         {
-            _config = TrackerConfig("camera_cloud", 40, 400, 0.1, "camera", "points");
+            handle_ = getNodeHandle();
         }
-        ~CameraTracker()
+        else
         {
-            ROS_INFO("CameraTracker destructor");
+            handle_ = getMTNodeHandle();
         }
-    };
+        initialize(concurrency_level);
+        NODELET_INFO("%s tracker nodelet initialized...", _config.tracker_name.c_str());
+    }
+
+    CameraTracker::CameraTracker()
+    {
+        _config = TrackerConfig("camera_cloud", 40, 400, 0.1, "camera", "points");
+    }
+
+    void CameraTracker::onInit()
+    {
+        private_handle_ = getPrivateNodeHandle();
+        int concurrency_level = _load_params();
+        // Check if explicitly single threaded, otherwise, let nodelet manager dictate thread pool size
+        if (concurrency_level == 1)
+        {
+            handle_ = getNodeHandle();
+        }
+        else
+        {
+            handle_ = getMTNodeHandle();
+        }
+        initialize(concurrency_level);
+        NODELET_INFO("%s tracker nodelet initialized...", _config.tracker_name.c_str());
+    }
 }
 
 PLUGINLIB_EXPORT_CLASS(f1tenth_sensor_fusion::LidarTracker, nodelet::Nodelet);

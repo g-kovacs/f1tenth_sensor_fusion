@@ -19,7 +19,6 @@
 #define F1TENTH_SENSOR_FUSION__CLUSTER_TRACKER_H
 
 #include <f1tenth_sensor_fusion/tracker_config.hpp>
-#include <nodelet/nodelet.h>
 #include <ros/ros.h>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>
@@ -28,14 +27,7 @@
 #include <geometry_msgs/Point.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <message_filters/subscriber.h>
-#include <pcl/point_types.h>
-#include <pcl/point_cloud.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
-#include <pcl/search/kdtree.h>
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <iterator>
 #include <vector>
@@ -47,19 +39,17 @@ namespace f1tenth_sensor_fusion
 #define prune_interval 50
 
     /// The ClusterTracker class to clusterize a point cloud (converted from a lidar scan) and track said clusters.
-    class ClusterTracker : public nodelet::Nodelet
+    class ClusterTracker
     {
-    public:
-        ClusterTracker();
-        virtual ~ClusterTracker() = 0;
-
     protected:
-        virtual void onInit();
+        virtual void initialize(int concurrency);
+        virtual int _load_params();
         TrackerConfig _config;
+        ros::NodeHandle handle_;
+        ros::NodeHandle private_handle_;
 
     private:
         /// Initialize nodelet with necessary parameters.
-        virtual int _load_params();
 
         /**
          * Initialize a given number of Kalman-filters. Parameters only, the initial states must be set after calling this function.
@@ -145,8 +135,6 @@ namespace f1tenth_sensor_fusion
 
         void extract_cluster_data(const pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud, const std::vector<pcl::PointIndices> &cluster_indices, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &cluster_vec, std::vector<pcl::PointXYZ> &cluster_centres);
 
-        ros::NodeHandle nh_;
-        ros::NodeHandle private_nh_;
         pcl::EuclideanClusterExtraction<pcl::PointXYZ> cluster_extr_;
         boost::recursive_mutex filter_mutex_;
         boost::mutex mutex_;

@@ -16,28 +16,19 @@
 */
 
 #include <f1tenth_sensor_fusion/cluster_tracker.h>
-#include <pluginlib/class_list_macros.h>
-#include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Int32MultiArray.h>
 #include <boost/thread.hpp>
 #include <random>
-#include <opencv2/video/tracking.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <pcl/search/kdtree.h>
+#include <pcl_ros/point_cloud.h>
 
 namespace f1tenth_sensor_fusion
 {
-    ClusterTracker::ClusterTracker() {}
-
-    void ClusterTracker::onInit()
+    void ClusterTracker::initialize(int concurrency_level)
     {
-        boost::mutex::scoped_lock lock(mutex_);
         srand(time(NULL));
-        private_nh_ = getPrivateNodeHandle();
-
-        // Load parameters
-
-        int concurrency_level = _load_params();
 
 #ifndef NDEBUG
         _config.info(concurrency_level);
@@ -46,16 +37,6 @@ namespace f1tenth_sensor_fusion
         cluster_extr_.setClusterTolerance(_config.tolerance);
         cluster_extr_.setMaxClusterSize(_config.clust_max);
         cluster_extr_.setMinClusterSize(_config.clust_min);
-
-        // Check if explicitly single threaded, otherwise, let nodelet manager dictate thread pool size
-        if (concurrency_level == 1)
-        {
-            nh_ = getNodeHandle();
-        }
-        else
-        {
-            nh_ = getMTNodeHandle();
-        }
 
         // Only queue one pointcloud per running thread
         if (concurrency_level > 0)
@@ -70,25 +51,24 @@ namespace f1tenth_sensor_fusion
         transform_ = _config.scan_frame.compare(_config.target_frame) == 0 ? false : true;
 
         // Subscribe to topic with input data
-        sub_.subscribe(nh_, _config.scan_topic, input_queue_size_);
+        sub_.subscribe(handle_, _config.scan_topic, input_queue_size_);
         sub_.registerCallback(boost::bind(&ClusterTracker::cloudCallback, this, _1));
         // Init marker publisher if necessary
         if (_config.rviz)
-            marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(_config.tracker_name + std::string("/viz"), 100);
-        objID_pub_ = nh_.advertise<std_msgs::Int32MultiArray>(_config.tracker_name + std::string("/obj_id"), 100);
-        NODELET_INFO("Tracker nodelet initialized...");
+            marker_pub_ = handle_.advertise<visualization_msgs::MarkerArray>(_config.tracker_name + std::string("/viz"), 100);
+        objID_pub_ = handle_.advertise<std_msgs::Int32MultiArray>(_config.tracker_name + std::string("/obj_id"), 100);
     }
 
     int ClusterTracker::_load_params()
     {
-        _config.rviz = private_nh_.param<bool>("visualize_rviz", _config.rviz);
-        private_nh_.param<std::string>("scan_frame", _config.scan_frame, _config.scan_frame.c_str());
-        private_nh_.param<std::string>("target_frame", _config.target_frame, _config.scan_frame.c_str());
-        private_nh_.param<std::string>("scan_topic", _config.scan_topic, _config.scan_topic.c_str());
-        _config.tolerance = private_nh_.param<double>("tolerance", _config.tolerance);
-        _config.clust_max = private_nh_.param<int>("max_cluster_size", _config.clust_max);
-        _config.clust_min = private_nh_.param<int>("min_cluster_size", _config.clust_min);
-        return private_nh_.param("concurrency_level", 0);
+        _config.rviz = private_handle_.param<bool>("visualize_rviz", _config.rviz);
+        private_handle_.param<std::string>("scan_frame", _config.scan_frame, _config.scan_frame.c_str());
+        private_handle_.param<std::string>("target_frame", _config.target_frame, _config.scan_frame.c_str());
+        private_handle_.param<std::string>("scan_topic", _config.scan_topic, _config.scan_topic.c_str());
+        _config.tolerance = private_handle_.param<double>("tolerance", _config.tolerance);
+        _config.clust_max = private_handle_.param<int>("max_cluster_size", _config.clust_max);
+        _config.clust_min = private_handle_.param<int>("min_cluster_size", _config.clust_min);
+        return private_handle_.param("concurrency_level", 0);
     }
 
     void ClusterTracker::_init_KFilters(size_t cnt)
@@ -395,12 +375,12 @@ namespace f1tenth_sensor_fusion
             {
                 std::stringstream ss;
                 ss << _config.tracker_name << "/cluster_" << cluster_pubs_.size();
-                ros::Publisher *pub = new ros::Publisher(nh_.advertise<sensor_msgs::PointCloud2>(ss.str(), 100));
+                ros::Publisher *pub = new ros::Publisher(handle_.advertise<sensor_msgs::PointCloud2>(ss.str(), 100));
                 cluster_pubs_.push_back(pub);
             }
             catch (ros::Exception &ex)
             {
-                NODELET_ERROR(ex.what());
+                ROS_ERROR(ex.what());
             }
         }
     }

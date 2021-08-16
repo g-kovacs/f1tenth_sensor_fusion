@@ -39,7 +39,7 @@ namespace f1tenth_sensor_fusion
             clust_min = clust_min;
             tolerance = tolerance;
         }
-        void info(const int concurrency)
+        inline void info(const int concurrency)
         {
             stringstream ss;
             ss << tracker_name << " information:" << endl;
