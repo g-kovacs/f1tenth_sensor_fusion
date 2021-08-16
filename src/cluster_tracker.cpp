@@ -51,7 +51,7 @@ namespace f1tenth_sensor_fusion
         transform_ = _config.scan_frame.compare(_config.target_frame) == 0 ? false : true;
 
         // Subscribe to topic with input data
-        sub_.subscribe(handle_, _config.scan_topic, input_queue_size_);
+        sub_.subscribe(handle_, _config.scan_topic.c_str(), input_queue_size_);
         sub_.registerCallback(boost::bind(&ClusterTracker::cloudCallback, this, _1));
         // Init marker publisher if necessary
         if (_config.rviz)
@@ -62,12 +62,12 @@ namespace f1tenth_sensor_fusion
     int ClusterTracker::_load_params()
     {
         _config.rviz = private_handle_.param<bool>("visualize_rviz", _config.rviz);
-        private_handle_.param<std::string>("scan_frame", _config.scan_frame, _config.scan_frame.c_str());
-        private_handle_.param<std::string>("target_frame", _config.target_frame, _config.scan_frame.c_str());
-        private_handle_.param<std::string>("scan_topic", _config.scan_topic, _config.scan_topic.c_str());
         _config.tolerance = private_handle_.param<double>("tolerance", _config.tolerance);
         _config.clust_max = private_handle_.param<int>("max_cluster_size", _config.clust_max);
         _config.clust_min = private_handle_.param<int>("min_cluster_size", _config.clust_min);
+        private_handle_.param<std::string>("scan_frame", _config.scan_frame, _config.scan_frame.c_str());
+        private_handle_.param<std::string>("target_frame", _config.target_frame, _config.scan_frame.c_str());
+        private_handle_.param<std::string>("scan_topic", _config.scan_topic, _config.scan_topic.c_str());
         return private_handle_.param("concurrency_level", 0);
     }
 
@@ -435,7 +435,10 @@ namespace f1tenth_sensor_fusion
 
         cluster_extr_.setSearchMethod(search_tree);
         cluster_extr_.setInputCloud(input_cloud);
+
+        ROS_INFO("kacsa");
         cluster_extr_.extract(cluster_indices);
+        ROS_INFO("picsa");
 
         for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); it++)
         {

@@ -1,0 +1,2 @@
+subscription_topic: "mynteye/points/data_raw"
+concurrency_level: 1

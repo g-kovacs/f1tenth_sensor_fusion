@@ -16,6 +16,14 @@
     </description>
   </class>
 
+  <class name="f1tenth_sensor_fusion/pointcloud_filter_nodelet"
+   type="f1tenth_sensor_fusion::PointCloudFilter"
+   base_class_type="nodelet::Nodelet">
+    <description>
+      Nodelet to filter point clouds published in sensor_msgs::PointCloud2 messages by the camera.
+    </description>
+  </class>
+
 </library>
 
 <library path="lib/libcluster_track">
