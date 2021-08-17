@@ -301,7 +301,7 @@ namespace f1tenth_sensor_fusion
             visualization_msgs::Marker m;
             m.id = i;
             m.header.frame_id = _config.target_frame;
-            m.type = visualization_msgs::Marker::CUBE;
+            m.type = _config.marker_type;
             m.scale.x = (double)_config.marker_size / 100;
             m.scale.y = (double)_config.marker_size / 100;
             m.scale.z = (double)_config.marker_size / 100;
