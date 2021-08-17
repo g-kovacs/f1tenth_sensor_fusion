@@ -29,7 +29,7 @@ namespace f1tenth_sensor_fusion
     struct TrackerConfig
     {
         TrackerConfig() {}
-        TrackerConfig(string tracker_name, int clust_min, int clust_max,
+        TrackerConfig(string tracker_name, int clust_min, int clust_max, int marker,
                       double tolerance, string scan_frame, string scan_topic,
                       bool rviz = true, string target_frame = "") : tracker_name(tracker_name),
                                                                     scan_frame(scan_frame), scan_topic(scan_topic), target_frame(target_frame)
@@ -38,6 +38,7 @@ namespace f1tenth_sensor_fusion
             clust_max = clust_max;
             clust_min = clust_min;
             tolerance = tolerance;
+            marker_size = marker;
         }
         inline void info(const int concurrency)
         {
@@ -49,6 +50,7 @@ namespace f1tenth_sensor_fusion
             ss << "\tclust_min:\t" << clust_min << endl;
             ss << "\tclust_max:\t" << clust_max << endl;
             ss << "\ttolerance:\t" << tolerance << endl;
+            ss << "\tmarker size (cm):\t" << marker_size << endl;
             ss << "\tscan frame:\t" << scan_frame << endl;
             ss << "\tscan topic:\t" << scan_topic << endl;
             ss << "\ttarget frame:\t" << target_frame << endl;
@@ -56,7 +58,7 @@ namespace f1tenth_sensor_fusion
             cout << ss.str() << endl;
         }
         bool rviz;
-        int clust_min, clust_max;
+        int clust_min, clust_max, marker_size;
         double tolerance;
         string scan_frame, target_frame, scan_topic, tracker_name;
     };

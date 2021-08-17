@@ -7,3 +7,4 @@ tolerance: 0.02 # [m]
 scan_frame: "fusion_base"
 scan_topic: "filtered_camera_cloud"
 #target_frame: "base_link"
+#marker_size: 8 # [cm]

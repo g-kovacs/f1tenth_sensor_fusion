@@ -65,6 +65,7 @@ namespace f1tenth_sensor_fusion
         _config.tolerance = private_handle_.param<double>("tolerance", _config.tolerance);
         _config.clust_max = private_handle_.param<int>("max_cluster_size", _config.clust_max);
         _config.clust_min = private_handle_.param<int>("min_cluster_size", _config.clust_min);
+        _config.marker_size = private_handle_.param<int>("marker_size", _config.marker_size);
         private_handle_.param<std::string>("scan_frame", _config.scan_frame, _config.scan_frame.c_str());
         private_handle_.param<std::string>("target_frame", _config.target_frame, _config.scan_frame.c_str());
         private_handle_.param<std::string>("scan_topic", _config.scan_topic, _config.scan_topic.c_str());
@@ -301,9 +302,9 @@ namespace f1tenth_sensor_fusion
             m.id = i;
             m.header.frame_id = _config.target_frame;
             m.type = visualization_msgs::Marker::CUBE;
-            m.scale.x = 0.08;
-            m.scale.y = 0.08;
-            m.scale.z = 0.08;
+            m.scale.x = (double)_config.marker_size / 100;
+            m.scale.y = (double)_config.marker_size / 100;
+            m.scale.z = (double)_config.marker_size / 100;
             m.action = visualization_msgs::Marker::ADD;
             m.color.a = 1.0;
             m.color.r = i % 2 ? 1 : 0;
