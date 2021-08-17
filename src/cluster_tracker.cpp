@@ -436,10 +436,7 @@ namespace f1tenth_sensor_fusion
 
         cluster_extr_.setSearchMethod(search_tree);
         cluster_extr_.setInputCloud(input_cloud);
-
-        ROS_INFO("kacsa");
         cluster_extr_.extract(cluster_indices);
-        ROS_INFO("picsa");
 
         for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); it++)
         {

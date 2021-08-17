@@ -1,10 +1,10 @@
 # Camera tracker parameters
-concurrency_level: 4
+concurrency_level: 2
 visualize_rviz: true
 max_cluster_size: 500 # default: 400
 min_cluster_size: 80 # default: 40
-tolerance: 0.02 # [m]
+tolerance: 0.01 # [m]
 scan_frame: "fusion_base"
 scan_topic: "filtered_camera_cloud"
 #target_frame: "base_link"
-#marker_size: 8 # [cm]
+marker_size: 4 # [cm]

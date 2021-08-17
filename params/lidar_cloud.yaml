@@ -5,6 +5,6 @@ max_cluster_size: 150 # default: 100
 min_cluster_size: 30 # default: 20
 tolerance: 0.04 # [m]
 scan_frame: "fusion_base"
-scan_topic: "cloud"
+scan_topic: "lidar_cloud"
 #target_frame: "base_link"
 #marker_size: 8 # [cm]

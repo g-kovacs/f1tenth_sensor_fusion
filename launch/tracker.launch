@@ -9,11 +9,11 @@
         <rosparam command="load" file="$(find f1tenth_sensor_fusion)/params/pointcloud_filter.yaml" />
     </node>
 
-    <!-- <node pkg="nodelet" type="nodelet" name="LidarTracker" args="load f1tenth_sensor_fusion/lidar_tracker_nodelet tracker_manager" output="screen">
+    <node pkg="nodelet" type="nodelet" name="LidarTracker" args="load f1tenth_sensor_fusion/lidar_tracker_nodelet tracker_manager" output="screen">
         <rosparam command="load" file="$(find f1tenth_sensor_fusion)/params/lidar_cloud.yaml" />
-    </node> -->
+    </node>
 
-    <!-- <node pkg="nodelet" type="nodelet" name="CameraTracker" args="load f1tenth_sensor_fusion/camera_tracker_nodelet tracker_manager" output="screen">
+    <node pkg="nodelet" type="nodelet" name="CameraTracker" args="load f1tenth_sensor_fusion/camera_tracker_nodelet tracker_manager" output="screen">
         <rosparam command="load" file="$(find f1tenth_sensor_fusion)/params/camera_cloud.yaml" />
-    </node> -->
+    </node>
 </launch>
