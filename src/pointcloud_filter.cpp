@@ -69,8 +69,9 @@ namespace f1tenth_sensor_fusion
         {
             tf2_.reset(new tf2_ros::Buffer());
             tf2_listener_.reset(new tf2_ros::TransformListener(*tf2_));
-            message_filter_.reset(new PointcloudMessageFilter(sub_, *tf2_, target_frame_, input_queue_size_, nh_));
+            message_filter_.reset(new PointCloud2MessageFilter(sub_, *tf2_, target_frame_, input_queue_size_, nh_));
             message_filter_->registerCallback(boost::bind(&PointCloudFilter::callback, this, _1));
+            message_filter_->registerFailureCallback(boost::bind(&PointCloudFilter::failureCallback, this, _1, _2));
         }
     }
 
@@ -103,6 +104,8 @@ namespace f1tenth_sensor_fusion
 
         sensor_msgs::PointCloud2::Ptr clustermsg(new sensor_msgs::PointCloud2);
         pcl::toROSMsg(*cloud, *clustermsg);
+        clustermsg->header = msg->header;
+        clustermsg->header.stamp = ros::Time::now();
 
         if (!target_frame_.empty() && cloud->header.frame_id != target_frame_)
         {

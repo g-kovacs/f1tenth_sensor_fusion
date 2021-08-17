@@ -7,4 +7,4 @@ tolerance: 0.04 # [m]
 scan_frame: "fusion_base"
 scan_topic: "lidar_cloud"
 #target_frame: "base_link"
-#marker_size: 8 # [cm]
+marker_size: 5 # [cm]

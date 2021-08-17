@@ -22,7 +22,7 @@
 #include <nodelet/nodelet.h>
 #include <boost/thread/mutex.hpp>
 #include <message_filters/subscriber.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/message_filter.h>
@@ -32,7 +32,7 @@
 
 namespace f1tenth_sensor_fusion
 {
-    typedef tf2_ros::MessageFilter<sensor_msgs::PointCloud2> PointcloudMessageFilter;
+    typedef tf2_ros::MessageFilter<sensor_msgs::PointCloud2> PointCloud2MessageFilter;
 
     class PointCloudFilter : public nodelet::Nodelet
     {
@@ -53,7 +53,7 @@ namespace f1tenth_sensor_fusion
         boost::mutex mutex_;
         boost::shared_ptr<tf2_ros::Buffer> tf2_;
         boost::shared_ptr<tf2_ros::TransformListener> tf2_listener_;
-        boost::shared_ptr<PointcloudMessageFilter> message_filter_;
+        boost::shared_ptr<PointCloud2MessageFilter> message_filter_;
         ros::Publisher pub_;
         message_filters::Subscriber<sensor_msgs::PointCloud2> sub_;
         std::string sub_topic_;
