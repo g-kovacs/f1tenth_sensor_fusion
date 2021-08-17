@@ -22,7 +22,7 @@ namespace f1tenth_sensor_fusion
 {
     LidarTracker::LidarTracker()
     {
-        _config = TrackerConfig("laser_cloud", 20, 100, 8, 0.1, "asd", "asd");
+        _config = TrackerConfig("laser_cloud", 20, 100, 0.1, "asd", "asd", 8, visualization_msgs::Marker::CUBE);
     }
 
     void LidarTracker::onInit()
@@ -44,7 +44,7 @@ namespace f1tenth_sensor_fusion
 
     CameraTracker::CameraTracker()
     {
-        _config = TrackerConfig("camera_cloud", 40, 400, 8, 0.1, "camera", "points");
+        _config = TrackerConfig("camera_cloud", 40, 400, 0.1, "camera", "points", 8, visualization_msgs::Marker::SPHERE);
     }
 
     void CameraTracker::onInit()
@@ -66,7 +66,7 @@ namespace f1tenth_sensor_fusion
 
     CamDebug::CamDebug()
     {
-        _config = TrackerConfig("cam_debug", 40, 400, 8, 0.1, "camera", "points");
+        _config = TrackerConfig("cam_debug", 40, 400, 0.1, "camera", "points", 8, visualization_msgs::Marker::SPHERE);
     }
 }
 

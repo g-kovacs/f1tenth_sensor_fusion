@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <ros/ros.h>
+#include <visualization_msgs/Marker.h>
 
 namespace f1tenth_sensor_fusion
 {
@@ -29,8 +30,8 @@ namespace f1tenth_sensor_fusion
     struct TrackerConfig
     {
         TrackerConfig() {}
-        TrackerConfig(string tracker_name, int clust_min, int clust_max, int marker,
-                      double tolerance, string scan_frame, string scan_topic,
+        TrackerConfig(string tracker_name, int clust_min, int clust_max, double tolerance,
+                      string scan_frame, string scan_topic, int marker, int m_type,
                       bool rviz = true, string target_frame = "") : tracker_name(tracker_name),
                                                                     scan_frame(scan_frame), scan_topic(scan_topic), target_frame(target_frame)
         {
@@ -39,6 +40,7 @@ namespace f1tenth_sensor_fusion
             clust_min = clust_min;
             tolerance = tolerance;
             marker_size = marker;
+            marker_type = m_type;
         }
         inline void info(const int concurrency)
         {
@@ -61,6 +63,7 @@ namespace f1tenth_sensor_fusion
         int clust_min, clust_max, marker_size;
         double tolerance;
         string scan_frame, target_frame, scan_topic, tracker_name;
+        int marker_type;
     };
 }
 
