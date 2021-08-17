@@ -47,6 +47,7 @@ namespace f1tenth_sensor_fusion
         void connectCb();
         void disconnectCb();
         void filter(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
+        void planar_segmentation(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
         void info(int);
         ros::NodeHandle nh_;
         ros::NodeHandle private_nh_;
@@ -59,6 +60,8 @@ namespace f1tenth_sensor_fusion
         std::string sub_topic_;
         std::string target_frame_;
         unsigned int input_queue_size_;
+        bool segmentation;
+        float segmentation_factor;
     };
 }
 

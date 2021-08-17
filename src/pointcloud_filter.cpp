@@ -35,6 +35,8 @@ namespace f1tenth_sensor_fusion
         private_nh_ = getPrivateNodeHandle();
         private_nh_.param<std::string>("subscription_topic", sub_topic_, "cloud");
         private_nh_.param<std::string>("target_frame", target_frame_, "fusion_base");
+        private_nh_.param<bool>("segmentation", segmentation, false);
+        private_nh_.param<float>("segmentation_factor", segmentation_factor, 1.0f);
         int concurrency = private_nh_.param<int>("concurrency_level", 0);
 
 #ifndef NDEBUG
@@ -131,6 +133,14 @@ namespace f1tenth_sensor_fusion
         vg.setLeafSize(0.01f, 0.01f, 0.01f);
         vg.filter(*cloud_filtered);
 
+        if (segmentation)
+            planar_segmentation(cloud_filtered);
+
+        *cloud = *cloud_filtered;
+    }
+
+    void PointCloudFilter::planar_segmentation(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud_filtered)
+    {
         // Create the segmentation object for the planar model and set all the parameters
         pcl::SACSegmentation<pcl::PointXYZ> seg;
         pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
@@ -144,7 +154,7 @@ namespace f1tenth_sensor_fusion
         seg.setDistanceThreshold(0.02);
 
         int i = 0, nr_points = (int)cloud_filtered->size();
-        while (cloud_filtered->size() > 0.6 * nr_points)
+        while (cloud_filtered->size() > segmentation_factor * nr_points)
         {
             // Segment the largest planar component from the remaining cloud
             seg.setInputCloud(cloud_filtered);
@@ -165,8 +175,6 @@ namespace f1tenth_sensor_fusion
             extract.filter(*cloud_f);
             *cloud_filtered = *cloud_f;
         }
-
-        *cloud = *cloud_filtered;
     }
 
     void PointCloudFilter::failureCallback(const sensor_msgs::PointCloud2ConstPtr &scan_msg,
