@@ -1,5 +1,0 @@
-<launch>
-        <rosparam command="load" file="$(find f1tenth_sensor_fusion)/params/cam_debug.yaml" />
-    <node pkg="f1tenth_sensor_fusion" type="camera_track" name="cam_debug" output="screen" launch-prefix="gdb -ex --args">
-    </node>
-</launch>
