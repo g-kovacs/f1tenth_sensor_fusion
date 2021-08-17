@@ -58,8 +58,6 @@ namespace f1tenth_sensor_fusion
 
     private_nh_.param<std::string>("target_frame", target_frame_, "");
     private_nh_.param<std::string>("subscription_topic", subscription_topic_, "scan");
-    private_nh_.param<double>("transform_tolerance", transform_tolerance_, 0.01);
-
     int concurrency_level = private_nh_.param("concurrency_level", 0);
 
 #ifndef NDEBUG
@@ -134,7 +132,6 @@ namespace f1tenth_sensor_fusion
     ss << "\tconcurrency level:\t" << concurrency << std::endl;
     ss << "\ttarget frame:\t" << target_frame_ << std::endl;
     ss << "\tsubscription topic:\t" << subscription_topic_ << std::endl;
-    ss << "\ttransform tolerance:\t" << transform_tolerance_ << std::endl;
     std::cout << ss.str() << std::endl;
   }
 

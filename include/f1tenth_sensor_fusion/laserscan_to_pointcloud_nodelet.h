@@ -91,7 +91,6 @@ namespace f1tenth_sensor_fusion
     unsigned int input_queue_size_;
     std::string target_frame_;
     std::string subscription_topic_;
-    double transform_tolerance_;
   };
 
 } // namespace f1tenth_sensor_fusion

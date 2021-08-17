@@ -4,7 +4,7 @@ cam_debug:
   visualize_rviz: true
   max_cluster_size: 400 # default: 400
   min_cluster_size: 30 # default: 40
-  tolerance: 0.005 # [m]
+  tolerance: 0.02 # [m]
   scan_frame: "fusion_base"
-  scan_topic: "mynteye/points/data_raw"
+  scan_topic: "filtered_camera_cloud"
   #target_frame: "base_link"
