@@ -151,8 +151,6 @@ add_library(cluster_track src/cluster_tracker.cpp src/trackers.cpp)
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/point_cloud_node.cpp)
 
-add_executable(camera_track src/camera_tracker_node.cpp)
-
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -170,7 +168,6 @@ add_executable(camera_track src/camera_tracker_node.cpp)
 
 target_link_libraries(converters ${catkin_LIBRARIES})
 target_link_libraries(cluster_track ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-target_link_libraries(camera_track cluster_track ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 #############
 ## Install ##
