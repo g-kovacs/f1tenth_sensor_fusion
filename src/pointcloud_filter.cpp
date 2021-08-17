@@ -128,7 +128,7 @@ namespace f1tenth_sensor_fusion
         vg.setLeafSize(0.01f, 0.01f, 0.01f);
         vg.filter(*cloud_filtered);
 
-        /* // Create the segmentation object for the planar model and set all the parameters
+        // Create the segmentation object for the planar model and set all the parameters
         pcl::SACSegmentation<pcl::PointXYZ> seg;
         pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
         pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
@@ -141,7 +141,7 @@ namespace f1tenth_sensor_fusion
         seg.setDistanceThreshold(0.02);
 
         int i = 0, nr_points = (int)cloud_filtered->size();
-        while (cloud_filtered->size() > 0.3 * nr_points)
+        while (cloud_filtered->size() > 0.6 * nr_points)
         {
             // Segment the largest planar component from the remaining cloud
             seg.setInputCloud(cloud_filtered);
@@ -161,7 +161,7 @@ namespace f1tenth_sensor_fusion
             extract.setNegative(true);
             extract.filter(*cloud_f);
             *cloud_filtered = *cloud_f;
-        } */
+        }
 
         *cloud = *cloud_filtered;
     }
