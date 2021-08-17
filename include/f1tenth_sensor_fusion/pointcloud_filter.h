@@ -23,9 +23,17 @@
 #include <boost/thread/mutex.hpp>
 #include <message_filters/subscriber.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/message_filter.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl_ros/point_cloud.h>
 
 namespace f1tenth_sensor_fusion
 {
+    typedef tf2_ros::MessageFilter<sensor_msgs::PointCloud2> PointcloudMessageFilter;
+
     class PointCloudFilter : public nodelet::Nodelet
     {
     public:
@@ -34,14 +42,22 @@ namespace f1tenth_sensor_fusion
     private:
         virtual void onInit();
         void callback(const sensor_msgs::PointCloud2ConstPtr &msg);
+        void failureCallback(const sensor_msgs::PointCloud2ConstPtr &,
+                             tf2_ros::filter_failure_reasons::FilterFailureReason);
         void connectCb();
         void disconnectCb();
+        void filter(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
+        void info(int);
         ros::NodeHandle nh_;
         ros::NodeHandle private_nh_;
         boost::mutex mutex_;
+        boost::shared_ptr<tf2_ros::Buffer> tf2_;
+        boost::shared_ptr<tf2_ros::TransformListener> tf2_listener_;
+        boost::shared_ptr<PointcloudMessageFilter> message_filter_;
         ros::Publisher pub_;
         message_filters::Subscriber<sensor_msgs::PointCloud2> sub_;
         std::string sub_topic_;
+        std::string target_frame_;
         unsigned int input_queue_size_;
     };
 }
