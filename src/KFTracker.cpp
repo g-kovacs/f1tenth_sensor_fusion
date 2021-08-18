@@ -54,7 +54,7 @@ namespace f1tenth_sensor_fusion
         return minIndex;
     }
 
-    void KFTracker::correct_kfilter_matrices(const vector<pcl::PointXYZ> &cCentres, const vector<int> &objID)
+    void KFTracker::correct_kfilter_matrices(const PointVector &cCentres, const boost::container::vector<int> &objID)
     {
         for (size_t i = 0; i < objID.size(); i++)
         {
@@ -67,9 +67,9 @@ namespace f1tenth_sensor_fusion
         }
     }
 
-    vector<pcl::PointXYZ> KFTracker::generate_predictions()
+    PointVector KFTracker::generate_predictions()
     {
-        vector<pcl::PointXYZ> pred;
+        PointVector pred;
         for (auto it = k_filters_.begin(); it != k_filters_.end(); it++)
         {
             auto p = (*it)->predict();
@@ -83,7 +83,7 @@ namespace f1tenth_sensor_fusion
         return pred;
     }
 
-    void KFTracker::create_kfilters_for_new_clusters(vector<int> &objID, const vector<pcl::PointXYZ> &centres, const bool *cluster_used)
+    void KFTracker::create_kfilters_for_new_clusters(boost::container::vector<int> &objID, const PointVector &centres, const bool *cluster_used)
     {
         size_t diff = centres.size() - objID.size();
         _init_KFilters(diff);
@@ -106,7 +106,7 @@ namespace f1tenth_sensor_fusion
         }
     }
 
-    void KFTracker::prune_unused_kfilters(vector<int> &objID)
+    void KFTracker::prune_unused_kfilters(boost::container::vector<int> &objID)
     {
         size_t deleted = 0, i = 0;
         for (auto it = objID.begin(); it != objID.end(); it++)
@@ -121,9 +121,9 @@ namespace f1tenth_sensor_fusion
         kf_prune_ctr_ = 0;
     }
 
-    vector<int> KFTracker::match_objID(const vector<pcl::PointXYZ> &pred, const vector<pcl::PointXYZ> &cCentres, bool *cluster_used)
+    boost::container::vector<int> KFTracker::match_objID(const PointVector &pred, const PointVector &cCentres, bool *cluster_used)
     {
-        vector<int> vec(pred.size(), -1); // Initializing object ID vector with negative ones
+        boost::container::vector<int> vec(pred.size(), -1); // Initializing object ID vector with negative ones
 
         // Generating distance matrix to make cross-compliance between centres and KF-s easier
         // rows: predicted points (indirectly the KFilter)
@@ -155,7 +155,7 @@ namespace f1tenth_sensor_fusion
         return vec;
     }
 
-    void KFTracker::initialize(const vector<pcl::PointXYZ> &cCentres)
+    void KFTracker::initialize(const PointVector &cCentres)
     {
         _init_KFilters(cCentres.size());
         for (size_t i = 0; i < cCentres.size(); i++)
@@ -164,15 +164,15 @@ namespace f1tenth_sensor_fusion
         }
     }
 
-    vector<int> KFTracker::track(const vector<pcl::PointXYZ> &cCentres)
+    boost::container::vector<int> KFTracker::track(const PointVector &cCentres)
     {
-        vector<pcl::PointXYZ> predicted_pts = generate_predictions();
+        PointVector predicted_pts = generate_predictions();
 
         bool cluster_used[cCentres.size()];
         for (auto b : cluster_used)
             b = false;
 
-        vector<int> objID = match_objID(predicted_pts, cCentres, cluster_used);
+        boost::container::vector<int> objID = match_objID(predicted_pts, cCentres, cluster_used);
 
         // if there are new clusters, initialize new kalman filters with data of unmatched clusters
         if (objID.size() < cCentres.size())

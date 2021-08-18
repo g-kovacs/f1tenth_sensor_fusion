@@ -15,8 +15,8 @@
 *   
 */
 
-#ifndef F1TENTH_SENSOR_FUSION__KFTRACKER_H
-#define F1TENTH_SENSOR_FUSION__KFTRACKER_H
+#ifndef F1TENTH_SENSOR_FUSION__KFTRACKER_HPP
+#define F1TENTH_SENSOR_FUSION__KFTRACKER_HPP
 
 #include <opencv2/video/tracking.hpp>
 #include <boost/thread/mutex.hpp>
@@ -26,19 +26,19 @@
 
 namespace f1tenth_sensor_fusion
 {
-    using namespace boost::container;
+    typedef boost::container::vector<pcl::PointXYZ> PointVector;
 
 #define prune_interval 50
 
     class KFTracker
     {
     public:
-        vector<int> track(const vector<pcl::PointXYZ> &cCentres);
-        void initialize(const vector<pcl::PointXYZ> &cCentres);
+        boost::container::vector<int> track(const PointVector &cCentres);
+        void initialize(const PointVector &cCentres);
 
     private:
         boost::mutex mutex_;
-        vector<std::unique_ptr<cv::KalmanFilter>> k_filters_;
+        boost::container::vector<std::unique_ptr<cv::KalmanFilter>> k_filters_;
         size_t kf_prune_ctr_ = 0;
 
         inline float euclidian_dst(const pcl::PointXYZ &p, const pcl::PointXYZ &q)
@@ -55,11 +55,11 @@ namespace f1tenth_sensor_fusion
         }
 
         void _init_KFilters(size_t n);
-        vector<pcl::PointXYZ> generate_predictions();
-        vector<int> match_objID(const vector<pcl::PointXYZ> &pred, const vector<pcl::PointXYZ> &cCentres, bool *cluster_used);
-        void create_kfilters_for_new_clusters(vector<int> &objID, const vector<pcl::PointXYZ> &centres, const bool *cluster_used);
-        void prune_unused_kfilters(vector<int> &objID);
-        void correct_kfilter_matrices(const vector<pcl::PointXYZ> &cCentres, const vector<int> &objID);
+        PointVector generate_predictions();
+        boost::container::vector<int> match_objID(const PointVector &pred, const PointVector &cCentres, bool *cluster_used);
+        void create_kfilters_for_new_clusters(boost::container::vector<int> &objID, const PointVector &centres, const bool *cluster_used);
+        void prune_unused_kfilters(boost::container::vector<int> &objID);
+        void correct_kfilter_matrices(const PointVector &cCentres, const boost::container::vector<int> &objID);
 
         /**
          * Return the indices of the smallest element of a 2D matrix. Each row represents a KF predition, each column a detected cluster centroid, their 
@@ -72,4 +72,4 @@ namespace f1tenth_sensor_fusion
     };
 }
 
-#endif // F1TENTH_SENSOR_FUSION__KFTRACKER_H
+#endif // F1TENTH_SENSOR_FUSION__KFTRACKER_HPP
