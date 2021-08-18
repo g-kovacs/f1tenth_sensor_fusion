@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   pcl_ros
   cv_bridge
+  message_generation
 )
 
 find_package(OpenCV)
@@ -58,11 +59,11 @@ find_package(OpenCV)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  ObjectData.msg
+  ObjectMessage.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -79,10 +80,11 @@ find_package(OpenCV)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  sensor_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -116,7 +118,7 @@ find_package(OpenCV)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES f1tenth_sensor_fusion
-  CATKIN_DEPENDS laser_geometry message_filters sensor_msgs tf2 tf2_ros tf2_sensor_msgs nodelet roscpp rospy std_msgs pcl_ros cv_bridge
+  CATKIN_DEPENDS laser_geometry message_filters sensor_msgs tf2 tf2_ros tf2_sensor_msgs nodelet roscpp rospy std_msgs pcl_ros cv_bridge message_generation
 #  DEPENDS system_lib
 )
 
@@ -151,7 +153,7 @@ add_library(cluster_track src/cluster_tracker.cpp src/trackers.cpp)
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/point_cloud_node.cpp)
 
-add_executable(camera_track src/camera_tracker_node.cpp)
+add_executable(camera_track src/obsolete/camera_tracker_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

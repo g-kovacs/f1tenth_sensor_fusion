@@ -81,7 +81,7 @@ namespace f1tenth_sensor_fusion
          */
         void publish_cloud(ros::Publisher &pub, pcl::PointCloud<pcl::PointXYZ>::Ptr &cluster);
 
-        void publish_objects();
+        void publish_objects(const std::vector<geometry_msgs::Point> &cCentres);
 
         /**
          * Track detected clusters using Kalman-filters. 
@@ -142,7 +142,7 @@ namespace f1tenth_sensor_fusion
         std::vector<int> objID;
         std::vector<std::unique_ptr<cv::KalmanFilter>> k_filters_;
         std::vector<ros::Publisher *> cluster_pubs_;
-        ros::Publisher objID_pub_;
+        ros::Publisher obj_pub_;
         ros::Publisher marker_pub_;
         message_filters::Subscriber<sensor_msgs::PointCloud2> sub_;
 
