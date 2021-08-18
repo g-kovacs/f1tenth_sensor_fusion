@@ -23,6 +23,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <pcl/search/kdtree.h>
 #include <pcl_ros/point_cloud.h>
+#include <f1tenth_sensor_fusion/ObjectMessage.h>
 
 namespace f1tenth_sensor_fusion
 {
@@ -56,7 +57,7 @@ namespace f1tenth_sensor_fusion
         // Init marker publisher if necessary
         if (_config.rviz)
             marker_pub_ = handle_.advertise<visualization_msgs::MarkerArray>(_config.tracker_name + std::string("/viz"), 100);
-        objID_pub_ = handle_.advertise<std_msgs::Int32MultiArray>(_config.tracker_name + std::string("/obj_id"), 100);
+        obj_pub_ = handle_.advertise<ObjectMessage>(_config.tracker_name + std::string("/obj_id"), 100);
     }
 
     int ClusterTracker::_load_params()
@@ -130,12 +131,22 @@ namespace f1tenth_sensor_fusion
         pub.publish(*clustermsg);
     }
 
-    void ClusterTracker::publish_objects()
+    void ClusterTracker::publish_objects(const std::vector<geometry_msgs::Point> &cCentres)
     {
-        std_msgs::Int32MultiArray obj_msg;
+        ObjectMessage msg;
         for (auto it = objID.begin(); it != objID.end(); ++it)
-            obj_msg.data.push_back(*it);
-        objID_pub_.publish(obj_msg);
+        {
+            ObjectData data;
+            data.ID = *it;
+            data.centre[0] = *it == -1 ? 0.f : cCentres[*it].x;
+            data.centre[1] = *it == -1 ? 0.f : cCentres[*it].y;
+            data.centre[2] = *it == -1 ? 0.f : cCentres[*it].z;
+
+            msg.data.push_back(data);
+        }
+        msg.header.frame_id = _config.target_frame;
+        msg.header.stamp = ros::Time::now();
+        obj_pub_.publish(msg);
     }
 
     void ClusterTracker::KFTrack(const std_msgs::Float32MultiArray &ccs)
@@ -182,7 +193,7 @@ namespace f1tenth_sensor_fusion
             marker_pub_.publish(markers);
         }
 
-        publish_objects();
+        publish_objects(cCentres);
 
         if (k_filters_.size() > 0)
             correct_kfilter_matrices(cCentres);

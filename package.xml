@@ -51,17 +51,20 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <depend>laser_geometry</depend>
+  <depend>sensor_msgs</depend>
   <depend>pcl_ros</depend>
   <depend>message_filters</depend>
   <depend>nodelet</depend>
   <depend>roscpp</depend>
   <depend>rospy</depend>
   <depend>std_msgs</depend>
-  <depend>sensor_msgs</depend>
   <depend>cv_bridge</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_sensor_msgs</depend>
+
+  <depend>message_generation</depend>
+  <depend>message_runtime</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
