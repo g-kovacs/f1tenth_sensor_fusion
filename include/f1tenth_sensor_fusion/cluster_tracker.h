@@ -19,25 +19,17 @@
 #define F1TENTH_SENSOR_FUSION__CLUSTER_TRACKER_H
 
 #include <f1tenth_sensor_fusion/tracker_config.hpp>
+#include <f1tenth_sensor_fusion/KFTracker.hpp>
 #include <ros/ros.h>
 #include <boost/thread/mutex.hpp>
-#include <boost/thread/recursive_mutex.hpp>
 #include <sensor_msgs/PointCloud2.h>
-#include <std_msgs/Float32MultiArray.h>
-#include <geometry_msgs/Point.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <message_filters/subscriber.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <opencv2/video/tracking.hpp>
-#include <iterator>
-#include <vector>
-#include <memory>
 
 namespace f1tenth_sensor_fusion
 {
-
-#define prune_interval 50
-
     /// The ClusterTracker class to clusterize a point cloud (converted from a lidar scan) and track said clusters.
     class ClusterTracker
     {
@@ -49,30 +41,6 @@ namespace f1tenth_sensor_fusion
         ros::NodeHandle private_handle_;
 
     private:
-        /// Initialize nodelet with necessary parameters.
-
-        /**
-         * Initialize a given number of Kalman-filters. Parameters only, the initial states must be set after calling this function.
-         * 
-         * @param n the number of filters to initialize
-         */
-        void _init_KFilters(size_t n);
-
-        template <class C>
-        void _set_kfilter_state_pre(const C &pt, std::unique_ptr<cv::KalmanFilter> &filter);
-
-        /// Calculate the Euclidian distance of two 3D points.
-        float euclidian_dst(geometry_msgs::Point &, geometry_msgs::Point &);
-
-        /**
-         * Return the indices of the smallest element of a 2D matrix. Each row represents a KF predition, each column a detected cluster centroid, their 
-         * intersections the distance between the two.
-         * 
-         * @param distMat the distance matrix
-         * @return the indicies of the minimum element. <-1, -1> if no minimum was found (i.e. all elements equal)
-         */
-        std::pair<int, int> find_min_IDX(std::vector<std::vector<float>> &dist_mat);
-
         /**
          * Publish a PointCloud to a ROS topic.
          * 
@@ -81,34 +49,7 @@ namespace f1tenth_sensor_fusion
          */
         void publish_cloud(ros::Publisher &pub, pcl::PointCloud<pcl::PointXYZ>::Ptr &cluster);
 
-        void publish_objects(const std::vector<geometry_msgs::Point> &cCentres);
-
-        /**
-         * Track detected clusters using Kalman-filters. 
-         * 
-         * First, predictions of already working Kalman-filters are registered and matched against measured point data to find correspondence. Then, 
-         * unmatched points are assigned to a new filter, or those filters are deleted that have not been used for the last few input messages. If 
-         * visualization is enabled, markers are assigned to each tracked cluster. Finally, the Kalman-filters are updated based on measured data.
-         * 
-         * @param ccs data of detected cluster centres as a multi array
-         */
-        void KFTrack(const std_msgs::Float32MultiArray &ccs);
-
-        std::vector<geometry_msgs::Point> generate_predictions();
-
-        /**
-         * Initialize a vector of negative ones for representing object IDs, then match incoming prediction data to measured cluster data. Keep track of 
-         * successfully matched clusters.
-         * 
-         * @param[in] pred The predictions of KFilters in use
-         * @param[in] cCentres The measured point cloud cluster data
-         * @param[out] used Flags of which clusters were successfully matched
-         * @return The list of cluster indices matched to each filter (-1 if no match for a certain filter)
-         */
-        std::vector<int> match_objID(const std::vector<geometry_msgs::Point> &pred, const std::vector<geometry_msgs::Point> &cCentres, bool *cluster_used);
-
-        void create_kfilters_for_new_clusters(const std::vector<geometry_msgs::Point> &centres, const bool *cluster_used);
-        void prune_unused_kfilters();
+        void publish_objects(const boost::container::vector<pcl::PointXYZ> &cCentres, const boost::container::vector<int> &objIDs);
 
         /**
          * Create ROS Markers to later publish for enabling the visualization of detected objects.
@@ -117,11 +58,10 @@ namespace f1tenth_sensor_fusion
          * @param[in] IDs object IDs detected by filters
          * @param[out] markers markers adjusted to fit points
          */
-        void fit_markers(const std::vector<geometry_msgs::Point> &pts, const std::vector<int> &IDs, visualization_msgs::MarkerArray &markers);
+        void fit_markers(const boost::container::vector<pcl::PointXYZ> &pts,
+                         const boost::container::vector<int> &IDs, visualization_msgs::MarkerArray &markers);
 
-        void transform_centre(geometry_msgs::Point &centre);
-
-        void correct_kfilter_matrices(const std::vector<geometry_msgs::Point> &cCentres);
+        void transform_centre(pcl::PointXYZ &centre);
 
         void sync_cluster_publishers_size(size_t num_clusters);
 
@@ -133,21 +73,20 @@ namespace f1tenth_sensor_fusion
          */
         void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg);
 
-        void extract_cluster_data(const pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &cluster_vec, std::vector<pcl::PointXYZ> &cluster_centres);
+        void extract_cluster_data(const pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud,
+                                  boost::container::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &cluster_vec,
+                                  boost::container::vector<pcl::PointXYZ> &cluster_centres);
 
         pcl::EuclideanClusterExtraction<pcl::PointXYZ> cluster_extr_;
-        boost::recursive_mutex filter_mutex_;
         boost::mutex mutex_;
 
-        std::vector<int> objID;
-        std::vector<std::unique_ptr<cv::KalmanFilter>> k_filters_;
-        std::vector<ros::Publisher *> cluster_pubs_;
+        KFTracker _KFTracker;
+        boost::container::vector<ros::Publisher *> cluster_pubs_;
         ros::Publisher obj_pub_;
         ros::Publisher marker_pub_;
         message_filters::Subscriber<sensor_msgs::PointCloud2> sub_;
 
         size_t input_queue_size_;
-        size_t kf_prune_ctr_ = 0;
         size_t publisher_prune_ctr_ = 0;
         bool transform_;
         bool first_frame_ = true;
