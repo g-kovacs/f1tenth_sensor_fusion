@@ -34,7 +34,7 @@ Gergely Attila Kovács, . "F1TENTH sensor data clustering in ROS." https://githu
 ### Dependencies
 
 In addtion to the [Robot Operating System][ros], the project depends on:
- - [**OpenCV 3.4.5**][opencv]
+ - [**OpenCV 3.4.5**][opencv]  
  - [**boost**][boost]
 
 Newer OpenCV versions were not tested and are not guranteed to work. Addittional ROS packages that are needed can be found in the *package.xml* file.
@@ -96,9 +96,9 @@ Quick changes to nodelets without needing to recompile the sources can be made b
 
 #### Common parameters
 
--**`concurrency_level`**: sets the number of threads the manager should give the nodelet
--**`subscription_topic`**: the ROS topic providing the input
--**`target_frame`**: the ROS frame of the output data
+-**`concurrency_level`**: sets the number of threads the manager should give the nodelet  
+-**`subscription_topic`**: the ROS topic providing the input  
+-**`target_frame`**: the ROS frame of the output data  
 
 ## Nodelets & classes
 
@@ -112,8 +112,8 @@ This nodelet is responsible for converting the LiDAR scan data into *sensor_msgs
 
 ##### Related parameters & topics:
 
--**`${subscription_topic}`**: input topic of *sensor_msgs::LaserScan* messages
--**`lidar_cloud`**: output topic to publish scan data as *sensor_msgs::PointCloud2* messages
+-**`${subscription_topic}`**: input topic of *sensor_msgs::LaserScan* messages  
+-**`lidar_cloud`**: output topic to publish scan data as *sensor_msgs::PointCloud2* messages  
 
 #### pointcloud_filter_nodelet
 
@@ -121,10 +121,10 @@ This nodelet is responsible for filtering raw point cloud data (currently used f
 
 ##### Related parameters & topics:
 
--**`${subscription_topic}`**: input topic of *sensor_msgs::PointCloud2* messages
--**`${output_topic}`**: output topic to publish filtered cloud as *sensor_msgs::PointCloud2* messages
--**`${segmentation}`** [boolean]: whether planar segments should be removed from the point cloud
--**`${segmentation_factor}`**: what ratio of the cloud density before segmentetion should be preserved
+-**`${subscription_topic}`**: input topic of *sensor_msgs::PointCloud2* messages  
+-**`${output_topic}`**: output topic to publish filtered cloud as *sensor_msgs::PointCloud2* messages  
+-**`${segmentation}`** [boolean]: whether planar segments should be removed from the point cloud  
+-**`${segmentation_factor}`**: what ratio of the cloud density before segmentetion should be preserved  
 
 #### tracker nodelets
 
@@ -132,13 +132,13 @@ These nodelets are responsible for tracking clusters found in the input point cl
 
 ##### Related parameters & topics:
 
--**`${subscription_topic}`**: input topic of *sensor_msgs::PointCloud2* messages
--**`${subscription_frame}`**: frame of the incoming messages. Must be specified.
--**`${target_frame}`**: frame of published clouds. Defaults to **`${subscription_frame}`** if not specified.
--**`${max_cluster_size}`** and **`${min_cluster_size}`**: size boundaries of the clusters to be taken into consideration
--**`${tolerance}`** [m]: determines the maximum tolerable distance between points
--**`${visualize_rviz}`**: enable/disable marker generation for RViz visualization
--**`${marker_size}`** [cm]: size of generated markers
+-**`${subscription_topic}`**: input topic of *sensor_msgs::PointCloud2* messages  
+-**`${subscription_frame}`**: frame of the incoming messages. Must be specified.  
+-**`${target_frame}`**: frame of published clouds. Defaults to **`${subscription_frame}`** if not specified.  
+-**`${max_cluster_size}`** and **`${min_cluster_size}`**: size boundaries of the clusters to be taken into consideration  
+-**`${tolerance}`** [m]: determines the maximum tolerable distance between points  
+-**`${visualize_rviz}`**: enable/disable marker generation for RViz visualization  
+-**`${marker_size}`** [cm]: size of generated markers 
 
 ### ClusterTracker
 
@@ -146,9 +146,9 @@ Tracker nodelets inherit from this class. According to the parameters described 
 
 #### Output topics
 
--**`<tracker_name>/viz`**: *visualization_msgs::MarkerArray* message with markers for RViz
--**`<tracker_name>/detections`**: custom *ObjectMessage* stream containing detected cluster/object IDs with their coordinates (centre of cluster)
--**`<tracker_name>/cluster_<n>`**: *sensor_msgs::PointCloud2* message containing the data of the *n*-th cluster
+-**`<tracker_name>/viz`**: *visualization_msgs::MarkerArray* message with markers for RViz 
+-**`<tracker_name>/detections`**: custom *ObjectMessage* stream containing detected cluster/object IDs with their coordinates (centre of cluster)  
+-**`<tracker_name>/cluster_<n>`**: *sensor_msgs::PointCloud2* message containing the data of the *n*-th cluster 
 
 [//]: #
 [f1tenth]: <https://f1tenth.org/index.html>
