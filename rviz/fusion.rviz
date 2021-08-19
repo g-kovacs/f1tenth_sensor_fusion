@@ -30,7 +30,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: raw
+    SyncSource: lidar_points
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -189,22 +189,22 @@ Visualization Manager:
         - Class: rviz/Group
           Displays:
             - Class: rviz/MarkerArray
-              Enabled: true
+              Enabled: false
               Marker Topic: /camera_cloud/viz
               Name: camera_markers
               Namespaces:
                 {}
               Queue Size: 100
-              Value: true
+              Value: false
             - Class: rviz/MarkerArray
-              Enabled: false
+              Enabled: true
               Marker Topic: /laser_cloud/viz
               Name: lidar_markers
               Namespaces:
                 {}
               Queue Size: 100
-              Value: false
-          Enabled: false
+              Value: true
+          Enabled: true
           Name: Markers
       Enabled: true
       Name: Fusion
