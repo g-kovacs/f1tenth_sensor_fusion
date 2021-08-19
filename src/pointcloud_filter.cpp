@@ -34,6 +34,7 @@ namespace f1tenth_sensor_fusion
         boost::mutex::scoped_lock lock(mutex_);
         private_nh_ = getPrivateNodeHandle();
         private_nh_.param<std::string>("subscription_topic", sub_topic_, "cloud");
+        private_nh_.param<std::string>("output_topic", out_topic_, "filtered_cloud");
         private_nh_.param<std::string>("target_frame", target_frame_, "fusion_base");
         private_nh_.param<bool>("segmentation", segmentation, false);
         private_nh_.param<float>("segmentation_factor", segmentation_factor, 1.0f);
@@ -63,7 +64,7 @@ namespace f1tenth_sensor_fusion
             input_queue_size_ = boost::thread::hardware_concurrency();
         }
 
-        pub_ = nh_.advertise<sensor_msgs::PointCloud2>("filtered_camera_cloud", 30, boost::bind(&PointCloudFilter::connectCb, this),
+        pub_ = nh_.advertise<sensor_msgs::PointCloud2>(out_topic_.c_str(), 30, boost::bind(&PointCloudFilter::connectCb, this),
                                                        boost::bind(&PointCloudFilter::disconnectCb, this));
         if (target_frame_.empty())
             sub_.registerCallback(boost::bind(&PointCloudFilter::callback, this, _1));
@@ -82,7 +83,7 @@ namespace f1tenth_sensor_fusion
         boost::mutex::scoped_lock lock(mutex_);
         if (pub_.getNumSubscribers() > 0 && sub_.getSubscriber().getNumPublishers() == 0)
         {
-            NODELET_INFO("Got a subscriber to filtered_camera_cloud, starting %s subscriber", sub_topic_.c_str());
+            NODELET_INFO("Got a subscriber to %s, starting %s subscriber", out_topic_.c_str(), sub_topic_.c_str());
             sub_.subscribe(nh_, sub_topic_, input_queue_size_);
         }
     }
@@ -92,7 +93,7 @@ namespace f1tenth_sensor_fusion
         boost::mutex::scoped_lock lock(mutex_);
         if (pub_.getNumSubscribers() == 0)
         {
-            NODELET_INFO("No subscibers to filtered_camera_cloud, shutting down subscriber to %s.", sub_topic_.c_str());
+            NODELET_INFO("No subscibers to %s, shutting down subscriber to %s.", out_topic_.c_str(), sub_topic_.c_str());
             sub_.unsubscribe();
         }
     }

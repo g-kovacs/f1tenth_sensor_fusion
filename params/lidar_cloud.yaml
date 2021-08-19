@@ -1,10 +1,11 @@
 # LiDAR tracker parameters
+
 concurrency_level: 2
 visualize_rviz: true
 max_cluster_size: 150 # default: 100
 min_cluster_size: 40 # default: 20
 tolerance: 0.04 # [m]
-scan_frame: "fusion_base"
-scan_topic: "lidar_cloud"
-#target_frame: "base_link"
+subscription_frame: "fusion_base"
+subscription_topic: "lidar_cloud"
+#target_frame: "base_link" # defaults to subscription_frame
 marker_size: 5 # [cm]

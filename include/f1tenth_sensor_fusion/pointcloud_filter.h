@@ -58,6 +58,7 @@ namespace f1tenth_sensor_fusion
         ros::Publisher pub_;
         message_filters::Subscriber<sensor_msgs::PointCloud2> sub_;
         std::string sub_topic_;
+        std::string out_topic_;
         std::string target_frame_;
         unsigned int input_queue_size_;
         bool segmentation;

@@ -57,7 +57,7 @@ namespace f1tenth_sensor_fusion
         // Init marker publisher if necessary
         if (_config.rviz)
             marker_pub_ = handle_.advertise<visualization_msgs::MarkerArray>(_config.tracker_name + std::string("/viz"), 100);
-        obj_pub_ = handle_.advertise<ObjectMessage>(_config.tracker_name + std::string("/obj_id"), 100);
+        obj_pub_ = handle_.advertise<ObjectMessage>(_config.tracker_name + std::string("/detections"), 100);
     }
 
     int ClusterTracker::_load_params()
@@ -67,9 +67,9 @@ namespace f1tenth_sensor_fusion
         _config.clust_max = private_handle_.param<int>("max_cluster_size", _config.clust_max);
         _config.clust_min = private_handle_.param<int>("min_cluster_size", _config.clust_min);
         _config.marker_size = private_handle_.param<int>("marker_size", _config.marker_size);
-        private_handle_.param<std::string>("scan_frame", _config.scan_frame, _config.scan_frame.c_str());
+        private_handle_.param<std::string>("subscription_frame", _config.scan_frame, _config.scan_frame.c_str());
         private_handle_.param<std::string>("target_frame", _config.target_frame, _config.scan_frame.c_str());
-        private_handle_.param<std::string>("scan_topic", _config.scan_topic, _config.scan_topic.c_str());
+        private_handle_.param<std::string>("subscription_topic", _config.scan_topic, _config.scan_topic.c_str());
         return private_handle_.param("concurrency_level", 0);
     }
 
